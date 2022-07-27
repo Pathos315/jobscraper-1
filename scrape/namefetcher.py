@@ -1,18 +1,21 @@
+"""_summary_
+
+Returns:
+        _type_: _description_
+"""
 import re
-from contextlib import suppress
 from dataclasses import dataclass
 
 from bs4 import BeautifulSoup
-from googlesearch import search
 from nltk.corpus import names, webtext
-from requests.exceptions import (HTTPError, ProxyError, RequestException,
-                                 Timeout)
+from requests.exceptions import HTTPError, ProxyError, RequestException, Timeout
 from tld import get_tld
 
-from scrape.company_result import CompanyResult
-from scrape.configs import JobScrapeConfig
-from scrape.log import logger
-from scrape.web_scraper import webscrape_results
+from scrape.company_result import CompanyResult  # type: ignore
+from scrape.configs import JobScrapeConfig  # type: ignore
+from scrape.log import logger  # type: ignore
+from scrape.urls_from_search_query import generate_urls_from_search_query
+from scrape.web_scraper import webscrape_results  # type: ignore
 
 
 @dataclass(order=True)
@@ -37,119 +40,103 @@ class NameFetcher:
         self.company = company
         self.config = config
 
-        with open(config.brand_names, "r", encoding="utf8") as f:
-            brand_names = set(f.readlines())
-            self.set_of_brandnames: set[str] = {
-                brand.strip("\n") for brand in brand_names
-            }
+        with open(config.brand_names, "r", encoding="utf-8") as brands:
+            brand_names = set(brands.readlines())
+            self.set_of_brandnames: set[str] = set(
+                brand.strip("\n").lower() for brand in brand_names
+            )
 
         self.set_of_firstnames: set[str] = set(names.words())
         self.set_webtext: set[str] = set(webtext.words())
+
         self.greeting: str = "To"
         self.first: str = "Whom It"
         self.last: str = "May Concern"
 
-    def generate_urls_from_search_query(self):
-        """generate_urls_from_search_query searches google for urls matching its provided search query.
-
-        Returns:
-            A Generator that yields URL paths to be assessed or requested.
-        """
-        return search(
-            query=f'"{self.company.company_name}" \
-                            {self.config.search_query}',
-            start=0,
-            stop=3,
-            pause=4,
-            country="US",
-            verify_ssl=False,
-        )
-
-    def parse_provided_search_queries(self) -> BusinessCard:
-        """parse_provided_search_queries searches for contact information based on urls and source page data.
+    def parse_provided_search_queries(self) -> BusinessCard:  # type: ignore
+        """parse_provided_search_queries searches
+        for contact information based on urls
+        and source page data.
 
         Returns:
             BusinessCard: A dataclass containing the contact's contact information and company.
         """
 
-        linkedin = self.config.site_queries[0]
-        search_results: list[str] = self.generate_urls_from_search_query()
-        for link in search_results:
-            logger.info("Getting: %s | %s", link, self.company.company_name)
+        search_results = generate_urls_from_search_query(
+            f'"{self.company.company_name}" \
+                        {self.config.search_query}'
+        )
+        valid_links: list[str] = [link for link in search_results]
+        logger.info("valid_links: %s", valid_links)
 
-            if linkedin in link:
+        for link in valid_links:
+            logger.info("Getting: %s | %s", link, self.company.company_name)
+            if "linkedin" in link:
+                logger.info(
+                    "Name prospect found via LinkedIn! Proceeding to fetch name..."
+                )
                 (
                     self.greeting,
                     self.first,
                     self.last,
-                ) = self.fetch_names_from_linkedin_urls(link)
+                ) = self.fetch_names_from_url(link)
 
-            elif link.startswith(
+            elif (
                 self.config.site_queries[1]
                 or self.config.site_queries[2]
-                or self.config.site_queries[3],
+                or self.config.site_queries[3] in link
             ):
-                logger.error("Skipping: %s, as it is a reserved url.", link)
-
-            elif [brand for brand in self.set_of_brandnames if brand in link] != 0:
-                logger.debug("Brand matches found...")
-                try:
-                    response = webscrape_results(link, run_beautiful_soup=True)
-                    (
-                        self.greeting,
-                        self.first,
-                        self.last,
-                    ) = self.fetch_names_from_page_sources(response)
-                except (
-                    TypeError,
-                    HTTPError,
-                    AttributeError,
-                    ConnectionError,
-                    ProxyError,
-                    Timeout,
-                    IndexError,
-                    ValueError,
-                    RequestException,
-                ) as error_found:
-                    logger.error(error_found)
-
-            elif len([brand for brand in self.set_of_brandnames if brand in link]) == 0:
-                logger.debug("no brand matches found")
-                username = get_tld(link, fail_silently=True, as_object=True).domain  # type: ignore
-                (
-                    self.greeting,
-                    self.first,
-                    self.last,
-                ) = self.compare_username_against_firstnames_set(username)
+                logger.info(f"The link: {link} is reserved. Proceeding to next item.")
+                continue
 
             else:
-                try:
-                    response = webscrape_results(link, run_beautiful_soup=True)
-                    (
-                        self.greeting,
-                        self.first,
-                        self.last,
-                    ) = self.fetch_names_from_page_sources(response)
-                except (
-                    TypeError,
-                    AttributeError,
-                    HTTPError,
-                    ConnectionError,
-                    ProxyError,
-                    Timeout,
-                    IndexError,
-                    ValueError,
-                    RequestException,
-                ) as error_found:
-                    logger.error(error_found)
+                for fname in self.set_of_firstnames:
+                    if fname.lower() in link:
+                        logger.info(
+                            f"Name prospect {fname} found in URL! Proceeding to fetch name..."
+                        )
+                        (
+                            self.greeting,
+                            self.first,
+                            self.last,
+                        ) = self.fetch_names_from_url(link)
+                    else:
+                        logger.info("No vanity match found. Scraping HTML for clues...")
+                        try:
+                            soup: BeautifulSoup = webscrape_results(
+                                link, run_beautiful_soup=True
+                            )
+                            if soup is None:
+                                continue
+                            (
+                                self.greeting,
+                                self.first,
+                                self.last,
+                            ) = self.fetch_names_from_page_sources(soup)
+                        except (
+                            TypeError,
+                            AttributeError,
+                            HTTPError,
+                            ConnectionError,
+                            ProxyError,
+                            Timeout,
+                            IndexError,
+                            ValueError,
+                            RequestException,
+                        ) as query_error:
+                            logger.error(
+                                f"Scrape unsuccessful while parsing search queries. \
+                                The following error was raised:\
+                                {query_error}"
+                            )
 
-        return BusinessCard(
-            greeting=self.greeting,
-            fname=self.first,
-            surname=self.last,
-            fullname=f"{self.first} {self.last}",
-            workplace=self.company.company_name,
-        )
+            return BusinessCard(
+                greeting=self.greeting,
+                fname=self.first,
+                surname=self.last,
+                fullname=f"{self.first} {self.last}",
+                workplace=self.company.company_name,
+            )
 
     def fetch_names_from_page_sources(
         self, soup: BeautifulSoup
@@ -158,136 +145,180 @@ class NameFetcher:
             and from it extracts a self.first and self.last name.
 
         Args:
-            soup (BeautifulSoup): a BeautifulSoup object that contains the page source info to be assessed.
+            soup (BeautifulSoup): a BeautifulSoup object that contains
+            the page source info to be assessed.
 
         Returns:
             tuple[str,str]: A tuple containing a self.first and self.last name.
         """
-        soup_text = soup.text.split(" ")
-        all_text: list[str] = [word for word in soup_text]
-        entire_body: list[str] = [
-            word for word in all_text if word.lower() not in self.set_webtext
-        ]
+        soup_text: list[str] = soup.text.split(" ")
+        entire_body: list[str] = [word.strip() for word in soup_text]
+        name_prospects = [word for word in entire_body if word not in self.set_webtext]
+        logger.info("HTML obtained. Searching for first name candidates...")
         first_names = [
-            word
-            for word in entire_body
-            if word.title() in self.set_of_firstnames and len(word)
+            word for word in name_prospects if word.title() in self.set_of_firstnames
         ]
-
+        if len(first_names) == 0:
+            return "To Whom", "It May", "Concern"
         try:
-            self.first = max(first_names, key=len)
-        except ValueError as error_found:
-            logger.error(error_found)
-
-        with suppress(TypeError, IndexError):
-            full_names = next_grams(entire_body, self.first)
+            first = max(first_names, key=len)
+            full_names = seek_lastname_in_html(
+                target_list=entire_body, target_name=first
+            )
             logger.info(full_names)
-            for name in full_names:
-                logger.info(name)
-                if name[1] in self.set_of_brandnames:
+            for name_pair in full_names:
+                logger.info(name_pair)
+                if name_pair[1] in self.set_of_brandnames:
                     logger.info(
-                        "%s is for a brand, or is otherwise invalid. We encourage further review. Proceeding to next name.",
-                        name,
+                        f"{name_pair} contains a brand name, or is otherwise invalid. \
+                        We encourage further review. Proceeding to next name."
                     )
-                elif name[1] is None:
-                    logger.info(f"{name} is not a name.")
-                self.greeting, self.first, self.last = "Dear", name[0], name[1]
+                    break
+                else:
+                    self.greeting, self.first, self.last = (
+                        str("Dear"),
+                        name_pair[0],
+                        name_pair[1],
+                    )
+                    break
+        except (ValueError, TypeError, IndexError) as pagesource_error:
+            logger.error(
+                "Scrape unsuccessful while looking through HTML code. \
+                            The following error was raised:\
+                            %s:"
+                % pagesource_error
+            )
         return self.greeting, self.first, self.last
 
-    def fetch_names_from_linkedin_urls(self, link: str) -> tuple[str, str, str]:
-        """fetch_names_from_linkedin_urls takes a URL from LinkedIn and,
+    def fetch_names_from_url(self, link: str):
+        """fetch_names_from_url takes a URL and,
         assuming it is a vanity sting, extracts the name accordingly.
 
         Args:
-            link (str): A LinkedIn URL
+            link (str): A URL
 
         Returns:
             tuple[str,str,str]: A tuple containing a self.greeting, self.first, and self.last name.
         """
-        username = fetch_username_str_from_link(link)
+        if "/author/" in link:
+            username = isolate_vanity_url(link, "/author/")
+        elif "/in/" in link:
+            username = isolate_vanity_url(link)
+        else:
+            logger.info("Examining top level domain...")
+            username = get_tld(link, fail_silently=True, as_object=True).domain  # type: ignore
 
-        # split out the vanity url into a list.
-        # the self.first part of the url will almost definitely have it.
-        counter = username.count("-")
-        logger.info(f"{counter}-dashes found in username: \n {username}")
+        counter: int = username.count("-")
 
-        if counter == 0:
-            (
-                self.greeting,
-                self.first,
-                self.last,
-            ) = self.compare_username_against_firstnames_set(username)
-
-        elif counter == 1:
-            self.first, self.last = username.split("-", maxsplit=1)
-            self.greeting, self.first, self.last = (
-                "Dear",
-                self.first.title(),
-                self.last.title(),
-            )
-
-        elif counter >= 2:
-            self.first, middle, self.last, *_ = username.split("-", maxsplit=counter)
-            if re.findall(r"\d+", self.last):
-                self.last = middle
-            else:
-                self.first.join(f" {middle}")
-                # if the titlecase matches, then it's a match and we can return the result
-            self.greeting, self.first, self.last = (
-                "Dear",
-                self.first.title(),
-                self.last.title(),
-            )
-
-        return self.greeting, self.first, self.last
-
-    def compare_username_against_firstnames_set(self, username: str):
-        """compare_username_against_firstnames_set _summary_
-
-        Args:
-            username (str): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        self.greeting = "Dear"
-        first_candidates = [
+        first_candidates: list[str] = [
             first_name.strip()
             for first_name in self.set_of_firstnames
-            if first_name.lower() in username and username.find(first_name.lower()) == 0
+            if first_name.lower() in username
         ]
-        len_first_candidates = len(first_candidates)
 
-        if (
-            len_first_candidates == 1
-        ):  # if only one candidate match found, that's the only match so it gets returned
-            self.first = first_candidates[0].title()
-            self.last = username[len(self.first) + 1 :].title()
+        len_first_candidates: int = len(first_candidates)
+        self.greeting = str("Dear")
 
-        elif len_first_candidates >= 2:
-            # if multiple matches found, then go for the
-            # longest one as that's likely to be the whole name
-            logger.info(first_candidates)
-            self.first = max(first_candidates, key=len).title()
-            logger.info(self.first)
-            self.last = username[len(self.first) :].title()
-            logger.info(self.last)
-
-        else:  # if no other matches, but a username is present,
-            # split that username down the middle as close as
-            # possible and edit it later.
-            fname_len = len(username) // 2
-            self.first, self.last = (
-                username[:fname_len].title(),
-                username[fname_len - 1 :].title(),
+        if counter == 0:
+            candidate_strategies: dict = {
+                0: len_first_candidates_is_zero(username),
+                1: len_first_candidates_is_one(username, first_candidates),
+            }
+            first, last = candidate_strategies.get(
+                len_first_candidates,
+                len_first_candidates_is_greater(username, first_candidates),
             )
-        return self.greeting, self.first, self.last
+        elif counter == 1:
+
+            (
+                first,
+                last,
+            ) = username_hyphencount_is_one(username, counter)
+        else:
+            (
+                first,
+                last,
+            ) = username_hyphencount_is_greaterthantwo(username, counter)
+
+        return self.greeting, first, last
 
 
-def next_grams(
-    target_list: list, target_name: str, num_grams: int = 1
+def username_hyphencount_is_one(username: str, counter: int) -> tuple[str, str]:
+    """username_hyphencount_is_one _summary_
+
+    Args:
+        username (str): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    first, last = username.split(sep="-", maxsplit=counter)
+    return first, last
+
+
+def username_hyphencount_is_greaterthantwo(
+    username: str, counter: int
+) -> tuple[str, str]:
+    """username_hyphencount_is_greaterthantwo _summary_
+
+    Args:
+        username (str): _description_
+    """
+    first, middle, last, *_ = username.split("-", maxsplit=counter)
+    if re.findall(r"\d+", last):
+        last = middle
+    else:
+        first.join(f" {middle}")
+        # if the titlecase matches, then it's a match and we can return the result
+    return (
+        first.title(),
+        last.title(),
+    )
+
+
+def len_first_candidates_is_one(
+    username: str, first_candidate: list[str]
+) -> tuple[str, str]:
+    """if only one candidate match found,
+    that's the only match so it gets returned"""
+    try:
+        first = first_candidate[0].title()
+        last = username[len(first) + 1 :].title()
+    except IndexError as candidate_error:
+        logger.error(candidate_error)
+        first, last = "Whom It", "May Concern"
+    return first, last
+
+
+def len_first_candidates_is_greater(
+    username: str, first_candidates: list[str]
+) -> tuple[str, str]:
+    """if multiple matches found, then go for the longest
+    one as that's likely to be the whole name"""
+    logger.info(first_candidates)
+    first = max(first_candidates, key=len).title()
+    logger.info(first)
+    last = username[len(first) :].title()
+    logger.info(last)
+    return first, last
+
+
+def len_first_candidates_is_zero(username: str) -> tuple[str, str]:
+    """if no other matches, but a username is present,
+    split that username down the middle
+    as close as possible and edit it later."""
+    _fname_len: int = len(username) // 2
+    first, last = (
+        username[:_fname_len].title(),
+        username[_fname_len - 1 :].title(),
+    )
+    return first, last
+
+
+def seek_lastname_in_html(
+    target_list: list[str], target_name: str, num_grams: int = 1
 ) -> list[tuple[str, str]]:
-    """next_grams [summary]
+    """seek_lastname_in_html
 
     Args:
         target_list (list): [description]
@@ -299,10 +330,28 @@ def next_grams(
     blob, which in this case is the self.first and self.last name.
     """
     return [
-        (target_list[i], (upper_camel_case_split(str(target_list[i + num_grams])))[0])
+        (
+            target_list[i],
+            (upper_camel_case_split(str(target_list[i + num_grams])))[0],
+        )
         for i, word in enumerate(target_list)
         if word is target_name
     ]
+
+
+def isolate_vanity_url(link: str, separator: str = "/in/") -> str:
+    """isolate_vanity_url
+
+    Args:
+        link (str): _description_
+
+    Returns:
+        str: _description_
+    """
+    __prefix, __sep, username = link.partition(separator)
+    i = min(username.find("?"), username.find("/"))
+    username: str = username[:i].strip()
+    return username
 
 
 def upper_camel_case_split(text: str) -> list:
@@ -315,25 +364,3 @@ def upper_camel_case_split(text: str) -> list:
         list: A list of the words split up on account of being Camel Cased.
     """
     return re.findall(r"[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))", text)
-
-
-def fetch_username_str_from_link(link: str) -> str:
-    """fetch_username_str_from_link _summary_
-
-    Args:
-        link (str): _description_
-
-    Returns:
-        str: _description_
-    """
-    logger.info(link)
-
-    # split up linkedin url so that the vanity content is on the right
-    if "/in/" in link:
-        __prefix, __sep, username = link.partition("/in/")
-        i = min(username.find("?"), username.find("/"))
-        username = username[:i].strip()
-    else:
-        username = get_tld(link, fail_silently=True, as_object=True).domain  # type: ignore
-    logger.info(username)
-    return username

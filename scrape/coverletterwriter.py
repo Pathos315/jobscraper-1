@@ -1,3 +1,4 @@
+r"Generates a cover letter"
 import random
 from datetime import datetime
 
@@ -9,11 +10,12 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate
 
-from scrape.company_result import CompanyResult  # type: ignore
-from scrape.configs import JobScrapeConfig, PersonaConfig  # type: ignore
-from scrape.dir import change_dir  # type: ignore
-from scrape.namefetcher import BusinessCard  # type: ignore
-from scrape.striptags import strip_tags  # type: ignore
+from scrape.company_result import CompanyResult
+from scrape.configs import JobScrapeConfig, PersonaConfig
+from scrape.dir import change_dir
+from scrape.log import logger
+from scrape.namefetcher import BusinessCard
+from scrape.striptags import strip_tags
 
 reportlab.rl_config.warnOnMissingFontGlyphs = 0  # type: ignore
 
@@ -41,9 +43,12 @@ class CoverLetterWriter:
         self.pdfmetrics = pdfmetrics
         self.reference = "BuiltInNYC"
         self.letter_date = now.strftime("%B %d, %Y")
-        self.letter_title = f"{date}_{self.company.company_name}_{self.persona.name}_{random.randint(0,100)}.pdf"
+        self.letter_title = f"{date}_{self.company.company_name}_\
+            {self.persona.name}_{random.randint(0,100)}.pdf"
         self.export_dir = f"{date}_{config.export_dir}"
 
+        self.industry_type: str = f"{self.company.industries[0].lower()} industry"
+        self.len_company_adjectives: int = len(self.company.adjectives)
         self.address = ""
         self.intro = ""
         self.salut = ""
@@ -87,26 +92,72 @@ class CoverLetterWriter:
         Returns:
             str: _description_
         """
-        industry_type: str = f"{self.company.industries[0].lower()} industry"
-        len_company_adjct: int = len(self.company.adjectives)
-        if len_company_adjct == 1:
-            return f"I've heard great things about \
-                {self.company.company_name}'s impact on the {industry_type}, \
-                along with its reputation for being {self.company.adjectives[0].lower()}."
 
-        elif len_company_adjct == 2:
+        logger.info("Spilling the tea on the company...")
+
+        grapevine: dict[int, str] = {
+            0: self.heresay_none(),
+            1: self.heresay_len_one(),
+            2: self.heresay_len_two(),
+        }
+
+        heresay: str = grapevine.get(
+            self.len_company_adjectives, self.heresay_len_large()
+        )
+        return heresay
+
+    def heresay_none(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return f"I've heard great things about {self.company.company_name}'s \
+            impact on the {self.industry_type}."
+
+    def heresay_len_one(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        try:
+            return f"I've heard great things about \
+                {self.company.company_name}'s impact on the {self.industry_type}, \
+                along with its reputation for being {self.company.adjectives[0].lower()}."
+        except IndexError as index:
+            logger.error(index)
+            return self.heresay_none()
+
+    def heresay_len_two(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        try:
             return f"I've heard great things about {self.company.company_name}'s \
-                impact on the {industry_type}, along with its reputation \
+                impact on the {self.industry_type}, along with its reputation \
                 for being {self.company.adjectives[0].lower()} and \
                 {self.company.adjectives[1].lower()}."
+        except IndexError as index:
+            logger.error(index)
+            return self.heresay_none()
 
-        elif len_company_adjct >= 3:
+    def heresay_len_large(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        try:
             return f"I've heard great things about {self.company.company_name}'s \
-                impact on the {industry_type}, along with its reputation for being\
+                impact on the {self.industry_type}, along with its reputation for being\
                 {self.company.adjectives[1].lower()}, {self.company.adjectives[2].lower()},\
                 and {self.company.adjectives[0].lower()}."
-
-        return f"I've heard great things about {self.company.company_name}'s impact on the {industry_type}."
+        except IndexError as index:
+            logger.error(index)
+            return self.heresay_none()
 
     def letter_construction(self):
         """The collection of strings and variables that make up the copy of the cover letter."""
@@ -121,25 +172,38 @@ class CoverLetterWriter:
                         {self.letter_date}<br /><br />\
                         {self.hiring_manager},"
 
-        self.salut: str = f"As a {self.persona.role}, I enjoy seeing how people can come together to generate design solutions.\
-                {heresay}\
-                That's why I'm writing to express my interest in the <b>{self.job}</b> role at <b>{self.company.company_name}</b>\
-                where I believe that my {self.persona.values} will be a major value contribution to the design team \
-                at {self.company.company_name}.<br />"
+        self.salut: str = f"As a {self.persona.role}, I enjoy seeing how \
+            people can come together to generate design solutions.\
+            {heresay}\
+            That's why I'm writing to express my interest in the \
+            <b>{self.job}</b> role at <b>{self.company.company_name}</b>\
+            where I believe that my {self.persona.values} will be a \
+            major value contribution to the design team \
+            at {self.company.company_name}.<br />"
 
-        self.body: str = f'As requested on {self.reference}, I am proficient in {(self.persona.tools[random.randint(0,1)]).title()}, {(self.persona.tools[random.randint(1,2)]).title()}, \
-                and {(self.persona.tools[random.randint(3,4)]).title()}. I also am a Community Advisor for the Anti-Defamation League\'s new \
-                <a href="https://socialpatterns.adl.org/about/" color="blue">Social Patterns Library</a>\
-                and I\'m the co-founder of the <a href="https://www.prosocialdesign.org/" color="blue">Prosocial Design Network</a>,\
-                a 501(c)3 that explores how digital media might bring out the best in human nature through behavioral science.'
+        proficiencies: str = f"I am proficient in \
+            {(self.persona.tools[random.randint(0,1)]).title()}, \
+            {(self.persona.tools[random.randint(1,2)]).title()}, \
+            and {(self.persona.tools[random.randint(3,4)]).title()}"
 
-        self.outro: str = f'I\'d be {excitement_noun} to have the opportunity to further discuss the position and your needs for the role.\
-                My phone number is {self.persona.phone_number}, and my email is {self.persona.email}.\
-                My portfolio may be found at <a href="https://{self.persona.portfolio}" color="blue">{self.persona.portfolio}</a>.<br />'
+        self.body: str = f'As requested on {self.reference}, {proficiencies}. \
+            I also am a Community Advisor for the Anti-Defamation League\'s new \
+            <a href="https://socialpatterns.adl.org/about/" color="blue">Social Patterns Library</a>\
+            and I\'m the co-founder of the <a href="https://www.prosocialdesign.org/" color="blue">Prosocial Design Network</a>,\
+            a 501(c)3 that explores how digital media \
+            might bring out the best in human nature through behavioral science.'
+
+        self.outro: str = f'I\'d be {excitement_noun} to have the opportunity to\
+            further discuss the position and your needs for the role.\
+            My phone number is {self.persona.phone_number}, and my email is {self.persona.email}.\
+            My portfolio may be found at <a href="https://{self.persona.portfolio}" \
+            color="blue">{self.persona.portfolio}</a>.<br />'
 
         self.close: str = "Thank You For Your Consideration,<br />"
 
-        self.whole_letter: str = f"{self.address} {self.intro} {self.salut} {self.body} {self.outro} {self.close} {self.persona.name}"
+        self.whole_letter: str = f"{self.address} {self.intro} \
+            {self.salut} {self.body} {self.outro} \
+            {self.close} {self.persona.name}"
 
     def register_fonts(self):
         """This registers the fonts for use in the PDF, querying them from the config.json file."""

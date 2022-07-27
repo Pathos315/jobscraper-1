@@ -3,8 +3,8 @@ from json.decoder import JSONDecodeError
 from time import sleep
 from typing import Any
 
+import requests
 from bs4 import BeautifulSoup
-from requests import get
 from requests.exceptions import HTTPError, RequestException
 
 from scrape.log import logger
@@ -12,7 +12,7 @@ from scrape.log import logger
 
 def webscrape_results(
     target_url: str, run_beautiful_soup: bool = False, querystring: str | None = None
-) -> Any:
+) -> BeautifulSoup | Any:
     """webscrape_results takes a target_url, run_beautiful_soup,
     and querystring to extract results for further parsing purposes.
 
@@ -30,14 +30,13 @@ def webscrape_results(
     """
     sleep(1.5)
     try:
-        response = get(target_url, params=querystring)
-        if response.ok:
-            response_text = response.text
-            if run_beautiful_soup:
-                return BeautifulSoup(response_text, "html.parser")
-            return loads(response_text)
+        response = requests.get(target_url, params=querystring)
+        logger.info(response.status_code)
+        if run_beautiful_soup:
+            return BeautifulSoup(response.text, "html.parser")
+        return loads(response.text)
     except (JSONDecodeError, RequestException, HTTPError, AttributeError) as exception:
-        logger.warning(
+        logger.error(
             f"An error has occurred, moving to next item in sequence.\
             Cause of error: {exception}"
         )
