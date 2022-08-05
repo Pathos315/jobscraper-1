@@ -10,6 +10,7 @@ Then finally, it will write a cover letter based on all the data it has scraped 
 using the reportlab module.
 
 ## Known Issues
-- The namefetcher module will occasionally return false positives for names: e.g. if it sees "Disney" it will try to turn it into "Dis Ney". Existing filters don't appear sufficient.
+- ~~The namefetcher module will occasionally return false positives for names: e.g. if it sees "Disney" it will try to turn it into "Dis Ney". Existing filters don't appear sufficient.~~ This has been fixed as of August 4, 2022!
 - striptags.py may be useless and/or accomplishable through built_in means, not entirely clear how 
-- There are certainly ways this can be refactored
+- Namefetcher.py might benefit from a refactoring.
+- The program only works with BuiltIn listings.
