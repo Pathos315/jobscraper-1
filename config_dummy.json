@@ -11,7 +11,7 @@
     "font_italic": "./fonts/IBMPlexSans-Italic.ttf",
     "font_bolditalic": "./fonts/IBMPlexSans-BoldItalic.ttf",
     "header": {
-        "User Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+        "User Agent": "Mozilla/5.0 (Linux; Android 5.1; LYO-L21) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.56 Mobile Safari/537.36"
     },
     "excitement_words": [
         "thrilled",
