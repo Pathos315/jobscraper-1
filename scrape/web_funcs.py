@@ -4,15 +4,14 @@ from time import sleep
 from typing import Any
 
 import requests
-from bs4 import BeautifulSoup
 from requests.exceptions import HTTPError, RequestException
 
-from scrape.log import logger
+from scrape.log import logger  # type: ignore
 
 
 def webscrape_results(
-    target_url: str, run_beautiful_soup: bool = False, querystring: str | None = None
-) -> BeautifulSoup | Any:
+    target_url: str, querystring: str | None = None
+) -> Any:
     """webscrape_results takes a target_url, run_beautiful_soup,
     and querystring to extract results for further parsing purposes.
 
@@ -31,9 +30,7 @@ def webscrape_results(
     sleep(1.5)
     try:
         response = requests.get(target_url, params=querystring)
-        logger.info(response.status_code)
-        if run_beautiful_soup:
-            return BeautifulSoup(response.text, "html.parser")
+        logger.debug(response.status_code)
         return loads(response.text)
     except (JSONDecodeError, RequestException, HTTPError, AttributeError) as exception:
         logger.error(

@@ -1,5 +1,24 @@
 import json
 from dataclasses import dataclass, field
+from functools import cache
+
+
+@dataclass
+class CompanyResult:
+    """dataclass of the company"""
+
+    company_name: str
+    job_name: str
+    job_description: str
+    url: str
+    street_address: str = ""
+    inner_id: int = 1
+    suite: str = ""
+    city: str = "New York"
+    state: str = "NY"
+    zip_code: str = "10001"
+    # industries: list[str] = field(default_factory=list)
+    # adjectives: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -7,17 +26,10 @@ class PersonaConfig:
     """A dataclass containing information on you, the applicant."""
 
     name: str
-    role: str
-    values: str
-    my_background: str
-    years: str
-    services: str
     email: str
     portfolio: str
-    phone_number: str
+    phone: str
     signature: str
-    skills: list[str] = field(default_factory=list)
-    tools: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -25,9 +37,9 @@ class JobScrapeConfig:
     """A dataclass containing information on both the job query and cover letter settings."""
 
     export_dir: str
+    removelist: str
     url_builtin: str
-    brand_names: str
-    surnames: str
+    company_names: str
     total_pages: int
     per_page: int
     search_query: str
@@ -35,13 +47,11 @@ class JobScrapeConfig:
     font_bold: str
     font_italic: str
     font_bolditalic: str
-    header: dict = field(default_factory=dict)
-    excitement_words: list[str] = field(default_factory=list)
-    site_queries: list[str] = field(default_factory=list)
     querystring: dict = field(default_factory=dict)
     persona: dict = field(default_factory=dict)
 
 
+@cache
 def read_config(config_file: str):
     """read_config takes the json configuration file and returns the
     configuration and information about you, the applicant.

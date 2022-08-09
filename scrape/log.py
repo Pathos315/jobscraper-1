@@ -1,6 +1,6 @@
 import logging
 
-from scrape.dir import change_dir
+from scrape.dir import change_dir  # type: ignore
 
 logger = logging.getLogger("jobscraper")
 logger.setLevel(level=logging.INFO)
@@ -13,6 +13,6 @@ logger.addHandler(stream_handler)
 FILENAME = "jobscraper_printedlogs"
 
 with change_dir(FILENAME):
-    doc_handler = logging.FileHandler(FILENAME)
+    doc_handler = logging.FileHandler(FILENAME + ".log")
     doc_handler.setFormatter(formatter)
     logger.addHandler(doc_handler)
