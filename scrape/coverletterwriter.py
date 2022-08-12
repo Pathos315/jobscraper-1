@@ -26,6 +26,7 @@ date = now.strftime("%y%m%d")
 FONT_NAMES = ["IBMPlex", "IBMPlexBd", "IBMPlexIt", "IBMPlexBI"]
 FONT_STYLE = "Main"
 
+
 class CoverLetterWriter:
     """Generates a cover letter."""
 
@@ -51,9 +52,9 @@ class CoverLetterWriter:
         self.address = ""
         self.intro = ""
         self.salut = ""
-        self.strength_1 = ""
-        self.strength_2 = ""
-        self.strength_3 = ""
+        self.strengths_1 = ""
+        self.strengths_2 = ""
+        self.strengths_3 = ""
         self.outro = ""
         self.close = ""
         self.whole_letter = ""
@@ -106,7 +107,7 @@ class CoverLetterWriter:
                             I believe that I could contribute the following \
                             to {self.company.company_name}."
 
-        self.strength_1: str = f"<b>Initiative:</b> I co-founded \
+        self.strengths_1: str = f"<b>Initiative:</b> I co-founded \
                                 the Prosocial Design Network \
                                 in response to a need \
                                 I saw in the social media industry.\
@@ -118,7 +119,7 @@ class CoverLetterWriter:
                                 mean that I would likely \
                                 be a self-starter on projects \
                                 while working for {self.company.company_name}."
-        self.strength_2: str = f"<b>Craftsmanship:</b> I've designed \
+        self.strengths_2: str = f"<b>Craftsmanship:</b> I've designed \
                                 over 20 playable characters for \
                                 the online game, <b>deeeep.io</b>, \
                                 assets that have gone on to garner \
@@ -130,7 +131,7 @@ class CoverLetterWriter:
                                 website. For {self.company.company_name},\
                                 this means that you can expect me \
                                 to always deliver quality and impactful contributions."
-        self.strength_3: str = f"<b>Adaptability:</b> In addition to the \
+        self.strengths_3: str = f"<b>Adaptability:</b> In addition to the \
                                 skills you'd expect for a \
                                 {self.job} role, I can also adapt \
                                 to meet most unforseen digital needs.\
@@ -147,13 +148,13 @@ class CoverLetterWriter:
                             Please contact me at {self.persona.phone}, \
                             or {self.persona.email}, at your earliest convenience.\
                             My portfolio is available for review at \
-                            <a href="https://{self.persona.portfolio}" color="blue">\
+                            <a href="{self.persona.portfolio}" color="blue">\
                             {self.persona.portfolio}</a>.<br />'
 
         self.close: str = "Thank You For Your Consideration,<br />"
 
         self.whole_letter: str = f"{self.address} {self.intro} {self.salut}\
-            {self.strength_1} {self.strength_2} {self.strength_3} \
+            {self.strengths_1} {self.strengths_2} {self.strengths_3} \
             {self.outro} {self.close} {self.persona.name}"
 
     @cache
@@ -212,9 +213,9 @@ class CoverLetterWriter:
             Paragraph(self.address, style=self.styles[FONT_STYLE]),
             Paragraph(self.intro, style=self.styles[FONT_STYLE]),
             Paragraph(self.salut, style=self.styles[FONT_STYLE]),
-            Paragraph(self.strength_1, style=self.styles[FONT_STYLE]),
-            Paragraph(self.strength_2, style=self.styles[FONT_STYLE]),
-            Paragraph(self.strength_3, style=self.styles[FONT_STYLE]),
+            Paragraph(self.strengths_1, style=self.styles[FONT_STYLE]),
+            Paragraph(self.strengths_2, style=self.styles[FONT_STYLE]),
+            Paragraph(self.strengths_3, style=self.styles[FONT_STYLE]),
             Paragraph(self.outro, style=self.styles[FONT_STYLE]),
             Paragraph(self.close, style=self.styles[FONT_STYLE]),
             self.signature,

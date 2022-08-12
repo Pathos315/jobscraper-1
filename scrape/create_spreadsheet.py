@@ -2,12 +2,11 @@ import random
 from datetime import date
 
 import pandas as pd
+from googlesearch import search
 
-from scrape.company_result import CompanyResult  # type: ignore
-from scrape.configs import JobScrapeConfig  # type: ignore
+from scrape.configs import CompanyResult, JobScrapeConfig  # type: ignore
 from scrape.dir import change_dir
 from scrape.log import logger  # type: ignore
-from scrape.urls_from_search_query import generate_urls_from_search_query
 
 
 def export_data(dataframe: pd.DataFrame, export_dir: str):
@@ -25,7 +24,7 @@ def export_data(dataframe: pd.DataFrame, export_dir: str):
             logger.info(f"\n\n{dataframe.tail(10)}")
 
 
-class Comptroller:
+class Spreadsheet:
     """_summary_"""
 
     def __init__(
@@ -37,14 +36,18 @@ class Comptroller:
         self.config = config
         self.all_links = list[str]
 
-    def make_data_entries(self):  # type: ignore
+    def make_data_entries(self) -> dict[str, str | list[str]]:  # type: ignore
         """parse_provided_search_queries searches
         for contact information based on urls
         and source page data."""
 
-        search_results = generate_urls_from_search_query(
-            f'"{self.company.company_name}" \
-                        {self.config.search_query}'
+        search_results = search(
+            query=f'"{self.company.company_name}" \
+                        {self.config.search_query}',
+            stop=1,
+            pause=3,
+            country="US",
+            verify_ssl=False,
         )
         self.all_links = [link for link in search_results]
 
@@ -52,7 +55,6 @@ class Comptroller:
             "company": self.company.company_name,
             "job": self.company.job_name,
             "job_desc": self.company.job_description,
-            "email": self.company.email,
             "listings": self.all_links,
         }
 
@@ -61,4 +63,4 @@ class Comptroller:
 
 def make_dataframe(all_data_entries: list[dict[str, str | list[str]]]):
     df = pd.DataFrame(all_data_entries)
-    export_data(df, "jobscrape_spreadsheets")
+    return export_data(df, "jobscrape_spreadsheets")

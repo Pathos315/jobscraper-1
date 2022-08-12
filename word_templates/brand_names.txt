@@ -24,6 +24,23 @@ Adobe
 Amazon
 Apple
 Meta
+Verizon
+Berkshire Hathaway
+Alphabet
+Bank of America
+ExxonMobil
+Fannie Mae
+Verizon
+Pfizer
+Citigroup
+Goldman Sachs
+Wells Fargo
+Johnson & Johnson
+AT&T
+Intel
+Ford Motor Company
+UnitedHealth Group
+Anthem
 Facebook
 Microsoft
 Twitter
@@ -135,3 +152,7 @@ Washington
 Wisconsin
 Virginia
 Wyoming
+Calvin Klein
+Calvin
+Klein
+Squarespace 

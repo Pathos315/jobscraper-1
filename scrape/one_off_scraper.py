@@ -39,8 +39,6 @@ def one_time_scraper():
         return greenhouse_scrape(GREENHOUSE_TITLE, page_title, response)
     elif WORKDAY_PATTERN.search(page_title):
         return workday_scrape(link)
-    else:
-        pass  # will need to circle back to this one
 
 
 def workday_scrape(link: str):

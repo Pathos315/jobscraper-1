@@ -1,12 +1,12 @@
+import re
 from contextlib import suppress
 from json import JSONDecodeError
 
 from requests import HTTPError, RequestException
 from tqdm import tqdm
 
-from scrape.company_result import CompanyResult
-from scrape.configs import JobScrapeConfig
-from scrape.web_scraper import webscrape_results
+from scrape.configs import CompanyResult, JobScrapeConfig
+from scrape.web_funcs import webscrape_results
 
 
 def parse_results(
@@ -16,7 +16,7 @@ def parse_results(
     each job listing in BuiltInNYC, the job name, company info, and so forth.
     """
     company_results = []
-    docs = webscrape_results(base_url, querystring=querystring)  # type:ignore
+    docs = webscrape_results(base_url, querystring=querystring)
     jobs = [item.get("title") for item in docs["jobs"]]
     job_desc = [item.get("body") for item in docs["jobs"]]
     company_names = [item.get("title") for item in docs["companies"]]
@@ -28,14 +28,14 @@ def parse_results(
             unit="company",
         )
     ):
+        job_title = re.sub(r"\(.*?\)", "", jobs[idx])
         alias = alii[idx][9:]
         company_dict = company_lookup(alias)
         results = CompanyResult(
-            inner_id=idx,
-            alias=alias,
             company_name=company,
-            job_name=jobs[idx],
+            job_name=job_title,
             job_description=job_desc[idx],
+            inner_id=idx,
             **company_dict,  # type: ignore
         )  # type: ignore
         company_results.append(results)
@@ -52,18 +52,12 @@ def company_lookup(company_alias: str):
     ):
         company_page_url = f"https://api.builtin.com/companies/alias/{company_alias}"
         comp_docs = webscrape_results(company_page_url, querystring={"region_id": "5"})  # type: ignore
-        industries = [item.get("name") for item in comp_docs["industries"]]
         data = {
             "street_address": comp_docs.get("street_address_1"),
             "suite": comp_docs.get("street_address_2"),
             "city": comp_docs.get("city"),
             "state": comp_docs.get("state"),
-            "zip": comp_docs.get("zip"),
-            "mission": comp_docs.get("mission"),
+            "zip_code": comp_docs.get("zip"),
             "url": comp_docs.get("url"),
-            "adjectives": comp_docs.get("adjectives"),
-            "industries": industries,
-            "twitter": comp_docs.get("twitter"),
-            "email": comp_docs.get("email"),
         }
         return data
