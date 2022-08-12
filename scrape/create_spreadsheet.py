@@ -1,3 +1,5 @@
+#TODO incorporate this into main.py strategy pattern
+
 import random
 from datetime import date
 

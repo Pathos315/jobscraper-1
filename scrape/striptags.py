@@ -1,3 +1,5 @@
+#TODO: replace this entire module with a regex function
+
 from html.parser import HTMLParser
 from io import StringIO
 
