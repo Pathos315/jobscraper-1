@@ -16,7 +16,7 @@ from scrape.log import logger
 
 DEFAULT_ADDRESSEE = "To", "Whom It", "May Concern"
 SEP_CHECK = re.compile(r"/+.{2,6}/")
-LINK_CHECK = re.compile(r"(http(?:s?))://([a-z]{2,6}).([a-z]*?).([a-z]+)/(.*?)/(\b[a-z-]*)")
+LINK_CHECK = re.compile(r"(?P<protocol>https?)://(?P<subdomain>[a-z-]*).(?P<domain>[a-z-]*?).(?P<tld>[a-z-]+)/(?P<partition>.*?)/>?(?P<vanity>\b[a-z-]*)?/?(?P<path>\b[a-z-]*)?")
 UTF = "utf-8"
 
 
@@ -125,7 +125,7 @@ class NameFetcher:
         Returns:
             tuple[str,str,str]: A tuple containing a self.greeting, self.first, and self.last name.
         """
-
+        
         link = link.rstrip("/") if link.endswith("/") else link
 
         matchobj = re.search(r"/+.{2,5}$", link)
