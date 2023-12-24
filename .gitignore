@@ -1,0 +1,16 @@
+.env
+.logs/**
+.tox/**
+.coverage*
+.venv/**
+**/sciscraper.egg-info/**
+**/bin/**
+**/__pycache__/**
+exports/**
+.vscode/**
+**/lib/**
+.DS_Store
+Pipfile
+**/Job Scraper Exports/**
+**/jobscrape_exports/**
+**John Fallot**

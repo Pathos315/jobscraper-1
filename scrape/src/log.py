@@ -1,6 +1,6 @@
 import logging
 
-from scrape.dir import change_dir  # type: ignore
+from src.dir import change_dir  # type: ignore
 
 logger = logging.getLogger("jobscraper")
 logger.setLevel(level=logging.INFO)

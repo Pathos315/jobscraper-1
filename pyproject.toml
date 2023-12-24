@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "jobscraper"
+version = "1.0"
+description = "A bulk job listing webscraper and cover letter writer."
+authors = ["Pathos315 <john.fallot@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+tqdm = "^4.66.1"
+reportlab = "^4.0.7"
+jobspy = "^0.29.0"
+metadata-parser = "^0.12.0"
+requests = "^2.31.0"
+google = "^3.0.0"
+nltk = "^3.8.1"
+tld = "^0.13"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

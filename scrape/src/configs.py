@@ -1,24 +1,8 @@
 import json
 from dataclasses import dataclass, field
-from functools import cache
+from typing import Any
 
-
-@dataclass
-class CompanyResult:
-    """dataclass of the company"""
-
-    company_name: str
-    job_name: str
-    job_description: str
-    url: str
-    street_address: str = ""
-    inner_id: int = 1
-    suite: str = ""
-    city: str = "New York"
-    state: str = "NY"
-    zip_code: str = "10001"
-    # industries: list[str] = field(default_factory=list)
-    # adjectives: list[str] = field(default_factory=list)
+UTF = "utf-8"
 
 
 @dataclass
@@ -47,11 +31,10 @@ class JobScrapeConfig:
     font_bold: str
     font_italic: str
     font_bolditalic: str
-    querystring: dict = field(default_factory=dict)
+    querystring: dict[str, str | int | Any] = field(default_factory=dict)
     persona: dict = field(default_factory=dict)
 
 
-@cache
 def read_config(config_file: str):
     """read_config takes the json configuration file and returns the
     configuration and information about you, the applicant.
@@ -62,7 +45,12 @@ def read_config(config_file: str):
     Returns:
         Both the JobScrapeConfig and the PersonaConfig
     """
-    with open(config_file, encoding="utf-8") as file:
+    with open(config_file, mode="r", encoding="utf-8") as file:
         data = json.load(file)
         persona = data["persona"]
         return JobScrapeConfig(**data), PersonaConfig(**persona)
+
+
+CONFIG, PERSONA = read_config(
+    "/Users/johnfallot/Documents/all_venvs/jobscraper/scrape/src/config.json"
+)

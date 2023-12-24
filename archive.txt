@@ -1,0 +1,117 @@
+
+'''
+    #    def get_first_names(self):
+        self.first_names = [word for word in self.all_text.words if str(word).title() in self.name_words and str(word).title() not in self.brand_names and str(word).lower() not in self.webtext]
+        return self.first_names
+
+                
+
+        companies = ContactCollector(builtin_scrape)
+        companies.start()
+
+    '''
+
+
+
+            def data_preprocessing(self):
+        self.processed_data = []
+        for response in self.response:
+            soup = BeautifulSoup(response.text,'html.parser')
+            all_text = TextBlob(soup.text)
+            noun_phrases = all_text.noun_phrases
+            entire_body = [word for word in all_text.words if str(word).lower() not in self.webtext]
+            for noun in noun_phrases:
+                capitalized_nouns = TextBlob(noun).title()
+                all_words = capitalized_nouns.words
+                first_names = [word for word in all_words if str(word).title() in self.name_words and str(word).title() not in self.brand_names and str(word).lower() not in self.webtext]
+                if len(first_names):
+                    log_msg(first_names)
+                    full_names = next_grams(entire_body, first_names)
+                    self.processed_data.append(full_names)
+                    continue
+'''
+
+
+
+
+
+
+
+
+'''                for names in gotten_full_names:
+                    lastnames = str(names[1]).replace(*brand_names,'')
+                    log_msg(gotten_last_names)
+                    grams = [WordList(words[i:i + n])
+                            for i in range(len(words) - n + 1)]
+        return grams
+            sans_webtext = all_words.difference(webtext)
+            names_only = sans_webtext.intersection(name_words)
+            outcome = names_only.difference(brand_names)
+            if len(outcome):
+                indices_of_next_word_over = [(idx+1) for idx, word in enumerate(all_words) if word in outcome]
+                next_words_over = [word for idx, word in enumerate(all_words) if idx in indices_of_next_word_over]
+                results = list(zip(possible_names, next_words_over))
+                log_msg(results)
+                possible_names.append(results)
+            else:
+                pass
+    return possible_names'''
+
+#word_set.difference_update(brand_names)
+#names = all_words.intersection(name_words)
+
+#return all_words
+#lastnames_idx = [idx+1 for idx, word in enumerate(all_words) if word in output]
+
+
+#for word in output:
+#    index = all_blob.index(word)
+#    print(index)
+#    last_name = list(prime_words)[index+1]
+#    print(last_name)
+
+#print(output)
+
+#print (site_text)
+    #names = [name for name in site_text if name[1] in site_text == 'NNP']
+    #) if pos == 'NNP'
+
+                    #possible_names = all_words.intersection(NAME_WORDS)
+#indices_of_names = [idx for idx, word in enumerate(all_words) if word in possible_names]
+#output = [word for idx, word in enumerate(all_words) if idx in indices_of_names]
+# = words.intersection(NAME_WORDS)
+#full_names = TextBlob(possible_names).ngrams(2)
+#print(possible_names)
+#print(possible_names)
+#all_text = word_tokenize(all_blob)
+#print(all_blob.tags)
+
+'''def get_names(response):
+    soup = BeautifulSoup(response.text,'html.parser')
+    all_text = TextBlob(soup.text)
+    noun_phrases = all_text.noun_phrases
+    entire_body = [word for word in all_text.words if str(word).lower() not in webtext]
+    for noun in noun_phrases:
+        capitalized_nouns = TextBlob(noun).title()
+        all_words = capitalized_nouns.words
+        first_names = [word for word in all_words if str(word).title() in name_words and str(word).title() not in brand_names and str(word).lower() not in webtext]
+        if len(first_names):
+            log_msg(first_names)
+            full_names = next_grams(entire_body, first_names)
+            if isinstance(full_names,NoneType) == False:
+                log_msg(full_names)
+                continue
+            else:
+                pass'''
+
+
+
+'''In your cover letter, and during your interview, you can expand this resolution into a much more interesting narrative: 
+“One of my strengths is the ability to pivot strategically under pressure (the big idea). 
+For example, our sales plummeted in the last quarter of this fiscal year due to travel bans brought on by Covid-19 (the conflict). 
+To work around this, I started thinking about what our customers (the characters) really needed from us during this time, 
+and how we could refocus our strategy to serve domestic markets (the setting) with locally produced products. 
+My team (more characters) did this by doing A, B, and C. 
+As a result, we were not only able to contribute to improving local economies worldwide, 
+we also boosted our sales by 15% the first quarter of the next year (the resolution).”
+'''
