@@ -14,6 +14,7 @@ class PersonaConfig:
     portfolio: str
     phone: str
     signature: str
+    calendly: str
 
 
 @dataclass
@@ -21,17 +22,10 @@ class JobScrapeConfig:
     """A dataclass containing information on both the job query and cover letter settings."""
 
     export_dir: str
-    removelist: str
-    url_builtin: str
-    company_names: str
-    total_pages: int
-    per_page: int
-    search_query: str
     font_regular: str
     font_bold: str
     font_italic: str
     font_bolditalic: str
-    querystring: dict[str, str | int | Any] = field(default_factory=dict)
     persona: dict = field(default_factory=dict)
 
 

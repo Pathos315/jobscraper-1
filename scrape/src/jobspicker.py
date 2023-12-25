@@ -1,6 +1,7 @@
 import dataclasses
 from typing import Any
 
+import pandas as pd
 from jobspy import scrape_jobs
 
 
@@ -27,11 +28,9 @@ class JobListing:
 
 
 def pick_jobs() -> list[JobListing]:
-    jobs = scrape_jobs(
+    jobs: pd.DataFrame = scrape_jobs(
         site_name=["indeed", "linkedin", "glassdoor"],
         search_term="User Experience Designer",
-        location="New York, NY",
-        results_wanted=10,
-        country_indeed="USA",  # only needed for indeed / glassdoor
+        location="New York, NY",  # only needed for indeed / glassdoor
     )
     return [JobListing(*listing) for listing in jobs.itertuples()]

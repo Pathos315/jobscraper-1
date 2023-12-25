@@ -53,6 +53,14 @@ class CoverLetterContents:
     def subject(self) -> str:
         return f"{self.persona.name}'s Cover Letter for {self.listing.company}"
 
+    @property
+    def portfolio(self) -> str:
+        return (
+            "My portfolio is available for review upon request."
+            if self.persona.portfolio is not ""
+            else f"My portfolio exists at {self.persona.portfolio}"
+        )
+
     def __call__(self) -> str | None:
         """The collection of strings and variables that make up the copy of the cover letter."""
 
@@ -63,20 +71,25 @@ class CoverLetterContents:
         self.introduction: str = f"I'm applying to join the {self.listing.company} team, \
                             for the {self.listing.title} opening as listed on {(self.listing.site).capitalize()}."
 
-        self.body: str = f"I am a well-rounded and versatile candidate, able to work in most environments.\
-                            I have 4+ years of experience in both graphic and user experience design. I also am proficient \
-                            with coding in Python, HTML/CSS, Javascript; and I can design in Adobe Photoshop, Illustrator, InDesign,\
-                            and even After Effects."
+        self.body: str = f"Well-rounded, I'm able to work in most environments. \
+                            I have 4+ years of experience in both graphic and user experience design. \
+                            I am also proficient in Python, HTML/CSS, Javascript; and I can design in Figma, Photoshop, Illustrator, InDesign. \
+                            I can even animate in After Effects."
+
+        self.invite: str = f"At a time that works with your schedule, would you have availability for a 30 minute \
+                            meeting via Zoom or phone? For your convenience, I am including a \
+                            <a href={self.persona.calendly}>link</a> directly to my calendar \
+                            where you may select a time that works best for you."
 
         self.outro: str = f"Thank you for considering my application. I look forward to helping contribute to\
                             {self.listing.company}'s continued success.\
-                            Please contact me at {self.persona.email} at your earliest convenience.\
-                            My portfolio is available for review upon request.<br />"
+                            Feel free to contact me at {self.persona.email}, or via phone at {self.persona.phone}, at your earliest convenience.\
+                            {self.portfolio}<br />"
 
         self.close: str = "Warm regards,<br />"
 
         self.whole_letter: str = f"{self.address} {self.introduction} \
-                            {self.body} \
+                            {self.body} {self.invite}\
                             {self.outro} {self.close} {self.persona.name}"
 
 
