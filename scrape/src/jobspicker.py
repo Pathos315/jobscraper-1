@@ -3,6 +3,7 @@ from typing import Any
 
 import pandas as pd
 from jobspy import scrape_jobs
+from src.configs import DATE
 
 
 @dataclasses.dataclass
@@ -33,4 +34,5 @@ def pick_jobs() -> list[JobListing]:
         search_term="User Experience Designer",
         location="New York, NY",  # only needed for indeed / glassdoor
     )
+    jobs.to_csv(f"{DATE}_joblistings.csv")
     return [JobListing(*listing) for listing in jobs.itertuples()]

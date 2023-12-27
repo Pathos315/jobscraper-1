@@ -1,6 +1,6 @@
 r"Generates a cover letter"
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
+from typing import Any
 
 import reportlab.rl_config
 from reportlab.lib.pagesizes import letter
@@ -9,23 +9,18 @@ from reportlab.lib.units import inch
 from reportlab.pdfbase.pdfmetrics import registerFont, registerFontFamily
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate
-from src.configs import UTF, JobScrapeConfig, PersonaConfig
+from src.configs import (
+    DATE,
+    FONT_NAMES,
+    FONT_STYLE,
+    UTF,
+    JobScrapeConfig,
+    PersonaConfig,
+)
 from src.jobspicker import JobListing
 from src.striptags import strip_tags
 
 reportlab.rl_config.warnOnMissingFontGlyphs = 0  # type: ignore
-
-
-NOW = datetime.now()
-DATE = NOW.strftime("%B %d, %Y")
-
-FONT_NAMES = [
-    "IBMPlex",
-    "IBMPlexBd",
-    "IBMPlexIt",
-    "IBMPlexBI",
-]
-FONT_STYLE = "Main"
 
 
 @dataclass
@@ -56,9 +51,9 @@ class CoverLetterContents:
     @property
     def portfolio(self) -> str:
         return (
-            "My portfolio is available for review upon request."
-            if self.persona.portfolio is not ""
-            else f"My portfolio exists at {self.persona.portfolio}"
+            f"My portfolio exists at {self.persona.portfolio}"
+            if self.persona.portfolio != ""
+            else "My portfolio is available for review upon request."
         )
 
     def __call__(self) -> str | None:
@@ -78,12 +73,12 @@ class CoverLetterContents:
 
         self.invite: str = f"At a time that works with your schedule, would you have availability for a 30 minute \
                             meeting via Zoom or phone? For your convenience, I am including a \
-                            <a href={self.persona.calendly}>link</a> directly to my calendar \
+                            <a href={self.persona.calendly} color='blue'>link</a> directly to my calendar \
                             where you may select a time that works best for you."
 
         self.outro: str = f"Thank you for considering my application. I look forward to helping contribute to\
                             {self.listing.company}'s continued success.\
-                            Feel free to contact me at {self.persona.email}, or via phone at {self.persona.phone}, at your earliest convenience.\
+                            Feel free to contact me at <a href='mailto:{self.persona.email}' color='blue'>{self.persona.email}</a>, or via phone at {self.persona.phone}, at your earliest convenience.\
                             {self.portfolio}<br />"
 
         self.close: str = "Warm regards,<br />"
@@ -171,15 +166,23 @@ class CoverLetterPrinter:
 
     def format_letter(self):
         main_style = self.stylesheet[FONT_STYLE]
-        return [
-            Paragraph(self.cover_letter.address, style=main_style),
-            Paragraph(self.cover_letter.introduction, style=main_style),
-            Paragraph(self.cover_letter.body, style=main_style),
-            Paragraph(self.cover_letter.outro, style=main_style),
-            Paragraph(self.cover_letter.close, style=main_style),
-            self.cover_letter.signature,
-            Paragraph(self.persona.name, style=main_style),
+        paragraphs: list[Paragraph | Image] = [
+            getattr(self.cover_letter, attr_name)
+            for attr_name in [
+                "address",
+                "introduction",
+                "body",
+                "invite",
+                "outro",
+                "close",
+            ]
         ]
+        paragraphs = [
+            Paragraph(paragraph, style=main_style) for paragraph in paragraphs
+        ]
+        paragraphs.append(self.cover_letter.signature)
+        paragraphs.append(Paragraph(self.persona.name, style=main_style))
+        return paragraphs
 
     def write_cover_letter(self):
         """This creates the cover letter as .pdf using the ReportLab PDF Library."""

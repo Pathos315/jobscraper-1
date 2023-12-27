@@ -1,8 +1,20 @@
 import json
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any
 
 UTF = "utf-8"
+
+NOW = datetime.now()
+DATE = NOW.strftime("%B %d, %Y")
+
+FONT_NAMES = [
+    "IBMPlex",
+    "IBMPlexBd",
+    "IBMPlexIt",
+    "IBMPlexBI",
+]
+FONT_STYLE = "Main"
 
 
 @dataclass
