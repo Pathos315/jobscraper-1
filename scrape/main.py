@@ -23,7 +23,7 @@ def main() -> None:
         letter_printer.write_cover_letter()
 
     elapsed = perf_counter() - start
-    logger.info("Job search finished in %s seconds.", elapsed)
+    logger.info("Job search finished in %.3f seconds.", elapsed)
 
 
 if __name__ == "__main__":

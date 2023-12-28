@@ -1,6 +1,5 @@
 r"Generates a cover letter"
 from dataclasses import dataclass
-from typing import Any
 
 import reportlab.rl_config
 from reportlab.lib.pagesizes import letter
@@ -41,6 +40,10 @@ class CoverLetterContents:
         )
 
     @property
+    def link_color(self) -> str:
+        return "color='blue'"
+
+    @property
     def letter_title(self) -> str:
         return f"{DATE}_{self.listing.company}_{self.persona.name}.pdf"
 
@@ -51,9 +54,9 @@ class CoverLetterContents:
     @property
     def portfolio(self) -> str:
         return (
-            f"My portfolio exists at {self.persona.portfolio}"
+            f"My portfolio is at <a href={self.persona.portfolio} {self.link_color}>{self.persona.portfolio}</a>."
             if self.persona.portfolio != ""
-            else "My portfolio is available for review upon request."
+            else "My portfolio is available upon request."
         )
 
     def __call__(self) -> str | None:
@@ -64,21 +67,21 @@ class CoverLetterContents:
             Dear {self.listing.title} Search Team at {self.listing.company},"
 
         self.introduction: str = f"I'm applying to join the {self.listing.company} team, \
-                            for the {self.listing.title} opening as listed on {(self.listing.site).capitalize()}."
+                            for the {self.listing.title} opening <a href={self.listing.job_url} {self.link_color}> as listed on {(self.listing.site).capitalize()}</a>."
 
-        self.body: str = f"Well-rounded, I'm able to work in most environments. \
+        self.body: str = f"Well-rounded, enthusiastic, and able to see the big picture, I can work through any issue {self.listing.company} needs addressed. \
                             I have 4+ years of experience in both graphic and user experience design. \
-                            I am also proficient in Python, HTML/CSS, Javascript; and I can design in Figma, Photoshop, Illustrator, InDesign. \
+                            I know Python, HTML/CSS, Javascript; and I can design in Figma, Photoshop, Illustrator, and InDesign. \
                             I can even animate in After Effects."
 
-        self.invite: str = f"At a time that works with your schedule, would you have availability for a 30 minute \
+        self.invite: str = f"At a time that works with your schedule(s), would you have availability for a 30 minute \
                             meeting via Zoom or phone? For your convenience, I am including a \
-                            <a href={self.persona.calendly} color='blue'>link</a> directly to my calendar \
-                            where you may select a time that works best for you."
+                            <a href={self.persona.calendly} {self.link_color}>link</a> to my calendar. \
+                            Feel free to select a time that works best for you."
 
-        self.outro: str = f"Thank you for considering my application. I look forward to helping contribute to\
+        self.outro: str = f"Thanks for your consideration. I look forward to helping \
                             {self.listing.company}'s continued success.\
-                            Feel free to contact me at <a href='mailto:{self.persona.email}' color='blue'>{self.persona.email}</a>, or via phone at {self.persona.phone}, at your earliest convenience.\
+                            Feel free to contact me at <a href='mailto:{self.persona.email}' {self.link_color}>{self.persona.email}</a>, or by phone at {self.persona.phone}.\
                             {self.portfolio}<br />"
 
         self.close: str = "Warm regards,<br />"
@@ -165,17 +168,17 @@ class CoverLetterPrinter:
             text_letter.write(self.coverletter_as_txt)
 
     def format_letter(self):
+        ALL_ATTR_NAMES = [
+            "address",
+            "introduction",
+            "body",
+            "invite",
+            "outro",
+            "close",
+        ]
         main_style = self.stylesheet[FONT_STYLE]
         paragraphs: list[Paragraph | Image] = [
-            getattr(self.cover_letter, attr_name)
-            for attr_name in [
-                "address",
-                "introduction",
-                "body",
-                "invite",
-                "outro",
-                "close",
-            ]
+            getattr(self.cover_letter, attr_name) for attr_name in ALL_ATTR_NAMES
         ]
         paragraphs = [
             Paragraph(paragraph, style=main_style) for paragraph in paragraphs
