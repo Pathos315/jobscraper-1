@@ -14,3 +14,5 @@ Pipfile
 **/Job Scraper Exports/**
 **/jobscrape_exports/**
 **John Fallot**
+**.csv
+jobscraper_printedlogs/jobscraper_printedlogs.log
