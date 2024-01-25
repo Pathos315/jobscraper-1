@@ -58,5 +58,5 @@ def read_config(config_file: str):
 
 
 CONFIG, PERSONA = read_config(
-    "/Users/johnfallot/Documents/all_venvs/jobscraper/scrape/src/config.json"
+    "/Users/johnfallot/jobscraper-1/scrape/src/config.json"
 )

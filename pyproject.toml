@@ -13,10 +13,10 @@ reportlab = "^4.0.7"
 python-jobspy = "^1.1.3"
 metadata-parser = "^0.12.0"
 requests = "^2.31.0"
-google = "^3.0.0"
 nltk = "^3.8.1"
 tld = "^0.13"
 numpy = "^1.26.3"
+google = "^3.0.0"
 
 
 [build-system]

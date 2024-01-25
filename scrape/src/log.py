@@ -1,18 +1,12 @@
 import logging
-
-from src.dir import change_dir  # type: ignore
+import logging.config
+import json
+from pathlib import Path
 
 logger = logging.getLogger("jobscraper")
-logger.setLevel(level=logging.INFO)
-DATEFMT = "%d-%b-%y %H:%M:%S"
-formatter = logging.Formatter("[jobscraper]: %(asctime)s - %(message)s")
-stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(formatter)
-logger.addHandler(stream_handler)
 
-FILENAME = "jobscraper_printedlogs"
+logging_configs = Path("scrape/src/logging_config.json").resolve()
+with open(logging_configs) as f_in:
+    log_config = json.load(f_in)
+logging.config.dictConfig(log_config)
 
-with change_dir(FILENAME):
-    doc_handler = logging.FileHandler(FILENAME + ".log")
-    doc_handler.setFormatter(formatter)
-    logger.addHandler(doc_handler)

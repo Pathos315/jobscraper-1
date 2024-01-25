@@ -64,10 +64,10 @@ class CoverLetterContents:
 
         self.address: str = f"{self.persona.name}<br />\
             {DATE}<br /><br />\
-            Dear {self.listing.title} Search Team at {self.listing.company},"
+            Dear {self.listing.hiring_manager},"
 
         self.introduction: str = f"I'm applying to join the {self.listing.company} team, \
-                            for the {self.listing.title} opening <a href={self.listing.job_url} {self.link_color}> as listed on {(self.listing.site).capitalize()}</a>."
+                            for the {self.listing.title} opening <a href={self.listing.job_url} {self.link_color}> as listed on {str(self.listing.site).capitalize()}</a>."
 
         self.body: str = f"Well-rounded, enthusiastic, and able to see the big picture, I can work through any issue {self.listing.company} needs addressed. \
                             I have 4+ years of experience in both graphic and user experience design. \

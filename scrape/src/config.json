@@ -1,15 +1,15 @@
 {
     "export_dir": "Job Scraper Exports",
-    "font_regular": "../jobscraper/scrape/fonts/IBMPlexSans-Regular.ttf",
-    "font_bold": "../jobscraper/scrape/fonts/IBMPlexSans-Bold.ttf",
-    "font_italic": "../jobscraper/scrape/fonts/IBMPlexSans-Italic.ttf",
-    "font_bolditalic": "../jobscraper/scrape/fonts/IBMPlexSans-BoldItalic.ttf",
+    "font_regular": "../jobscraper-1/scrape/fonts/IBMPlexSans-Regular.ttf",
+    "font_bold": "../jobscraper-1/scrape/fonts/IBMPlexSans-Bold.ttf",
+    "font_italic": "../jobscraper-1/scrape/fonts/IBMPlexSans-Italic.ttf",
+    "font_bolditalic": "../jobscraper-1/scrape/fonts/IBMPlexSans-BoldItalic.ttf",
     "persona": {
         "name": "John Fallot",
         "email": "john.fallot@gmail.com",
         "portfolio": "",
         "phone": "631-745-1589",
-        "signature": "/Users/johnfallot/Documents/all_venvs/jobscraper/dummy_sig.png",
+        "signature": "/Users/johnfallot/jobscraper-1/dummy_sig.png",
         "calendly": "https://calendly.com/johnfallot/30min"
     }
 }
