@@ -127,7 +127,6 @@ class CoverLetterPrinter:
             )
     
     def __call__(self):
-        Path.cwd() / "exports"
         self.write_cover_letter()
         self.write_letter_as_txt()
 
