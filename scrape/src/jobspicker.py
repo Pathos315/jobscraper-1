@@ -2,7 +2,6 @@ from __future__ import annotations
 from http.client import InvalidURL
 import time
 from urllib.error import HTTPError
-from requests import Response
 from requests_html import HTMLSession, Element
 from dataclasses import dataclass, fields
 from pathlib import Path

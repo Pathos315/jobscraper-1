@@ -9,7 +9,7 @@
         "email": "john.fallot@gmail.com",
         "portfolio": "",
         "phone": "631-745-1589",
-        "signature": "dummy_sig.png",
+        "signature": "signature.example.png",
         "calendly": "https://calendly.com/johnfallot/30min"
     },
     "logging_config": {

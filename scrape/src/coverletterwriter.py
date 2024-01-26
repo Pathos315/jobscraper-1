@@ -18,6 +18,7 @@ from src.configs import (
     JobScrapeConfig,
     PersonaConfig,
 )
+from src.dir import change_dir
 from src.jobspicker import JobListing
 from src.striptags import strip_tags
 
@@ -136,8 +137,16 @@ class CoverLetterPrinter:
         )
 
     def __call__(self):
+        self.register_fonts()
+        self.add_styles()
         self.write_cover_letter()
-        self.write_letter_as_txt()
+        output_directory = Path(f"scrape/exports/{DATE}_exports")
+        output_directory.mkdir(exist_ok=True)
+        letter_txt_path = (
+            output_directory / f"{DATE}_{self.cover_letter.subject}_CoverLetter.txt"
+        )
+        with open(letter_txt_path, "w") as txt_file:
+            txt_file.write(self.coverletter_as_txt)
 
     def register_fonts(self):
         """This registers the fonts for use in the PDF, querying them from the config.json file."""
@@ -178,14 +187,6 @@ class CoverLetterPrinter:
             )
         )
 
-    def write_letter_as_txt(self):
-        with open(
-            f"{DATE}_{self.cover_letter.subject}_CoverLetter.txt",
-            "w",
-            encoding=UTF,
-        ) as text_letter:
-            text_letter.write(self.coverletter_as_txt)
-
     def format_letter(self) -> list[Paragraph | Image | Any]:
         """format_letter builds the cover letter.
 
@@ -206,7 +207,5 @@ class CoverLetterPrinter:
     def write_cover_letter(self):
         """This creates the cover letter as .pdf using the ReportLab PDF Library."""
         self.cover_letter()
-        self.register_fonts()
-        self.add_styles()
-        cl_flowables = self.format_letter()
-        return self.formatted_letter.build(cl_flowables)
+        paragraphs = self.format_letter()
+        self.formatted_letter.build(paragraphs)
