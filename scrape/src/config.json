@@ -1,6 +1,5 @@
 {
     "export_directory": "scrape/exports",
-    "logging_config_file": "scrape/src/logging_config.json",
     "font_regular": "scrape/fonts/IBMPlexSans-Regular.ttf",
     "font_bold": "scrape/fonts/IBMPlexSans-Bold.ttf",
     "font_italic": "scrape/fonts/IBMPlexSans-Italic.ttf",
@@ -12,5 +11,50 @@
         "phone": "631-745-1589",
         "signature": "dummy_sig.png",
         "calendly": "https://calendly.com/johnfallot/30min"
+    },
+    "logging_config": {
+        "version": 1,
+        "disable_existing_loggers": false,
+        "formatters": {
+            "simple": {
+                "format": "[jobscraper]: %(asctime)s - %(message)s"
+            },
+            "detailed": {
+                "format": "[jobscraper: %(levelname)s|%(module)s|L%(lineno)d]: %(message)s",
+                "datefmt": "%Y-%m-%dT%H:%M:%S%z"
+            }
+        },
+        "handlers": {
+            "stderr": {
+                "class": "logging.StreamHandler",
+                "level": "WARNING",
+                "formatter": "detailed",
+                "stream": "ext://sys.stderr"
+            },
+            "stdout": {
+                "class": "logging.StreamHandler",
+                "level": "INFO",
+                "formatter": "detailed",
+                "stream": "ext://sys.stdout"
+            },
+            "file": {
+                "class": "logging.handlers.RotatingFileHandler",
+                "level": "DEBUG",
+                "formatter": "simple",
+                "filename": ".logs/jobscraper.log",
+                "maxBytes": 20000000,
+                "backupCount": 2
+            }
+        },
+        "loggers": {
+            "root": {
+                "level": "INFO",
+                "handlers": [
+                    "stderr",
+                    "stdout",
+                    "file"
+                ]
+            }
+        }
     }
 }

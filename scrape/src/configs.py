@@ -39,11 +39,13 @@ class JobScrapeConfig:
     font_bold: str
     font_italic: str
     font_bolditalic: str
-    logging_config_file: str
     persona: dict = field(default_factory=dict)
+    logging_config: dict = field(default_factory=dict)
 
 
-def read_config(config_file: str | Path):
+def read_config(
+    config_file: str | Path,
+) -> tuple[JobScrapeConfig, PersonaConfig, dict[str, Any]]:
     """read_config takes the json configuration file and returns the
     configuration and information about you, the applicant.
 
@@ -56,7 +58,10 @@ def read_config(config_file: str | Path):
     with open(config_file, mode="r", encoding=UTF) as file:
         data = json.load(file)
         persona = data["persona"]
-        return JobScrapeConfig(**data), PersonaConfig(**persona)
+        logging_config = data["logging_config"]
+        return JobScrapeConfig(**data), PersonaConfig(**persona), logging_config
 
-main_config = Path("scrape/src/config.json").resolve()
-CONFIG, PERSONA = read_config(main_config)
+
+CONFIG_STR = "scrape/src/config.json"
+CONFIG_PATH = Path(CONFIG_STR).resolve()
+CONFIG, PERSONA, LOGGING_CONFIG = read_config(CONFIG_PATH)

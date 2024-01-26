@@ -23,6 +23,15 @@ from src.striptags import strip_tags
 
 reportlab.rl_config.warnOnMissingFontGlyphs = 0  # type: ignore
 
+ALL_ATTR_NAMES = [
+    "address",
+    "introduction",
+    "body",
+    "invite",
+    "outro",
+    "close",
+]
+
 
 @dataclass
 class CoverLetterContents:
@@ -35,7 +44,7 @@ class CoverLetterContents:
     @property
     def signature(self):
         return Image(
-            filename= Path.cwd() / self.persona.signature,
+            filename=Path.cwd() / self.persona.signature,
             width=80,
             height=40,
             hAlign="LEFT",
@@ -113,6 +122,7 @@ class CoverLetterPrinter:
             title=self.cover_letter.letter_title,
             author=self.persona.name,
             creator=self.persona.name,
+            description=self.cover_letter.subject,
         )
 
     @property
@@ -120,12 +130,11 @@ class CoverLetterPrinter:
         """This creates the cover letter as a .txt file."""
         stripped_letter = strip_tags(self.cover_letter.whole_letter)
         return (
-            stripped_letter
-            .replace("                            ","\n")
-            .replace("            ","\n\n")
-            .replace("      ","\n")
-            )
-    
+            stripped_letter.replace("                            ", "\n")
+            .replace("            ", "\n\n")
+            .replace("      ", "\n")
+        )
+
     def __call__(self):
         self.write_cover_letter()
         self.write_letter_as_txt()
@@ -153,8 +162,8 @@ class CoverLetterPrinter:
                 parent=self.stylesheet["Normal"],
                 fontName=FONT_NAMES[0],
                 spaceBefore=16,
-                fontSize=10,
-                leading=12,
+                fontSize=12,
+                leading=20,
                 firstLineIndent=0,
             )
         )
@@ -177,15 +186,12 @@ class CoverLetterPrinter:
         ) as text_letter:
             text_letter.write(self.coverletter_as_txt)
 
-    def format_letter(self):
-        ALL_ATTR_NAMES = [
-            "address",
-            "introduction",
-            "body",
-            "invite",
-            "outro",
-            "close",
-        ]
+    def format_letter(self) -> list[Paragraph | Image | Any]:
+        """format_letter builds the cover letter.
+
+        Returns:
+            list[Paragraph | Image | Any ]: A formatted letter with signature.
+        """
         main_style = self.stylesheet[FONT_STYLE]
         paragraphs: list[Paragraph | Image] = [
             getattr(self.cover_letter, attr_name) for attr_name in ALL_ATTR_NAMES
