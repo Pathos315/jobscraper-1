@@ -20,7 +20,7 @@ def main() -> None:
         letter_printer: CoverLetterPrinter = CoverLetterPrinter(
             CONFIG, PERSONA, letter_contents
         )
-        letter_printer.write_cover_letter()
+        letter_printer()
 
     elapsed = perf_counter() - start
     logger.info("Job search finished in %.3f seconds.", elapsed)

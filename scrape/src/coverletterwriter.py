@@ -1,5 +1,7 @@
 r"Generates a cover letter"
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 import reportlab.rl_config
 from reportlab.lib.pagesizes import letter
@@ -33,7 +35,7 @@ class CoverLetterContents:
     @property
     def signature(self):
         return Image(
-            filename=self.persona.signature,
+            filename= Path.cwd() / self.persona.signature,
             width=80,
             height=40,
             hAlign="LEFT",
@@ -67,20 +69,22 @@ class CoverLetterContents:
             Dear {self.listing.hiring_manager},"
 
         self.introduction: str = f"I'm applying to join the {self.listing.company} team, \
-                            for the {self.listing.title} opening <a href={self.listing.job_url} {self.link_color}> as listed on {str(self.listing.site).capitalize()}</a>."
+                            for the {self.listing.title} opening <a href={self.listing.job_url} {self.link_color}> as listed on {str(self.listing.site).strip().capitalize()}</a>. \
+                            I believe this role reports to you."
 
-        self.body: str = f"Well-rounded, enthusiastic, and able to see the big picture, I can work through any issue {self.listing.company} needs addressed. \
+        self.body: str = f"Well-rounded, enthusiastic, and able to see the big picture; I can work through any issue {self.listing.company} faces. \
                             I have 4+ years of experience in both graphic and user experience design. \
-                            I know Python, HTML/CSS, Javascript; and I can design in Figma, Photoshop, Illustrator, and InDesign. \
-                            I can even animate in After Effects."
+                            I know Python, HTML/CSS, JavaScript, and I can design in Figma, Photoshop, Illustrator, AfterEffects, and InDesign. \
+                            Beyond that, I'm the co-founder of the Prosocial Design Network, a 501(c)3 that looks to redesign the web to \
+                            bring out the best in human nature online."
 
-        self.invite: str = f"At a time that works with your schedule(s), would you have availability for a 30 minute \
-                            meeting via Zoom or phone? For your convenience, I am including a \
+        self.invite: str = f"At a time that works with your schedule, would you be free for a 30 minute \
+                            meeting via Zoom or phone? For your convenience, I'm including a \
                             <a href={self.persona.calendly} {self.link_color}>link</a> to my calendar. \
                             Feel free to select a time that works best for you."
 
         self.outro: str = f"Thanks for your consideration. I look forward to helping \
-                            {self.listing.company}'s continued success.\
+                            {str(self.listing.company).strip()}'s continued success.\
                             Feel free to contact me at <a href='mailto:{self.persona.email}' {self.link_color}>{self.persona.email}</a>, or by phone at {self.persona.phone}.\
                             {self.portfolio}<br />"
 
@@ -97,12 +101,42 @@ class CoverLetterPrinter:
     persona: PersonaConfig
     cover_letter: CoverLetterContents
 
+    @property
+    def formatted_letter(self):
+        return SimpleDocTemplate(
+            self.cover_letter.letter_title,
+            pagesize=letter,
+            rightMargin=inch,
+            leftMargin=inch,
+            topMargin=inch,
+            bottomMargin=inch,
+            title=self.cover_letter.letter_title,
+            author=self.persona.name,
+            creator=self.persona.name,
+        )
+
+    @property
+    def coverletter_as_txt(self) -> str:
+        """This creates the cover letter as a .txt file."""
+        stripped_letter = strip_tags(self.cover_letter.whole_letter)
+        return (
+            stripped_letter
+            .replace("                            ","\n")
+            .replace("            ","\n\n")
+            .replace("      ","\n")
+            )
+    
+    def __call__(self):
+        Path.cwd() / "exports"
+        self.write_cover_letter()
+        self.write_letter_as_txt()
+
     def register_fonts(self):
         """This registers the fonts for use in the PDF, querying them from the config.json file."""
-        registerFont(TTFont(FONT_NAMES[0], self.config.font_regular))
-        registerFont(TTFont(FONT_NAMES[1], self.config.font_bold))
-        registerFont(TTFont(FONT_NAMES[2], self.config.font_italic))
-        registerFont(TTFont(FONT_NAMES[3], self.config.font_bolditalic))
+        registerFont(TTFont(FONT_NAMES[0], Path.cwd() / self.config.font_regular))
+        registerFont(TTFont(FONT_NAMES[1], Path.cwd() / self.config.font_bold))
+        registerFont(TTFont(FONT_NAMES[2], Path.cwd() / self.config.font_italic))
+        registerFont(TTFont(FONT_NAMES[3], Path.cwd() / self.config.font_bolditalic))
         registerFontFamily(
             FONT_NAMES[0],
             normal=FONT_NAMES[0],
@@ -135,29 +169,6 @@ class CoverLetterPrinter:
                 bulletText="•",
             )
         )
-
-    @property
-    def formatted_letter(self):
-        return SimpleDocTemplate(
-            self.cover_letter.letter_title,
-            pagesize=letter,
-            rightMargin=inch,
-            leftMargin=inch,
-            topMargin=inch,
-            bottomMargin=inch,
-            title=self.cover_letter.letter_title,
-            author=self.persona.name,
-            creator=self.persona.name,
-        )
-
-    @property
-    def export_directory(self):
-        return f"{DATE}_{self.config.export_dir}"
-
-    @property
-    def coverletter_as_txt(self) -> str:
-        """This creates the cover letter as a .txt file."""
-        return strip_tags(self.cover_letter.whole_letter)
 
     def write_letter_as_txt(self):
         with open(

@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 UTF = "utf-8"
@@ -33,15 +34,16 @@ class PersonaConfig:
 class JobScrapeConfig:
     """A dataclass containing information on both the job query and cover letter settings."""
 
-    export_dir: str
+    export_directory: str
     font_regular: str
     font_bold: str
     font_italic: str
     font_bolditalic: str
+    logging_config_file: str
     persona: dict = field(default_factory=dict)
 
 
-def read_config(config_file: str):
+def read_config(config_file: str | Path):
     """read_config takes the json configuration file and returns the
     configuration and information about you, the applicant.
 
@@ -51,12 +53,10 @@ def read_config(config_file: str):
     Returns:
         Both the JobScrapeConfig and the PersonaConfig
     """
-    with open(config_file, mode="r", encoding="utf-8") as file:
+    with open(config_file, mode="r", encoding=UTF) as file:
         data = json.load(file)
         persona = data["persona"]
         return JobScrapeConfig(**data), PersonaConfig(**persona)
 
-
-CONFIG, PERSONA = read_config(
-    "/Users/johnfallot/jobscraper-1/scrape/src/config.json"
-)
+main_config = Path("scrape/src/config.json").resolve()
+CONFIG, PERSONA = read_config(main_config)

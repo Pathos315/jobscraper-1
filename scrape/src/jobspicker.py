@@ -2,8 +2,8 @@ from __future__ import annotations
 from http.client import InvalidURL
 import time
 from urllib.error import HTTPError
-from requests_html import HTMLSession
-from dataclasses import dataclass
+from requests_html import HTMLSession, Element
+from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any
 import pandas as pd
@@ -11,6 +11,7 @@ from jobspy import scrape_jobs
 from googlesearch import lucky
 from src.configs import DATE
 from src.log import logger
+from pyppeteer.errors import NetworkError
 
 OUTPUT = Path.cwd() / Path(f"{DATE}_joblistings.csv")
 
@@ -33,16 +34,21 @@ class JobListing:
     num_urgent_words: Any
     benefits: Any
     emails: Any
-    description: Any = ""
-    hiring_manager: Any = "Hiring Manager"
+    description: Any
+    hiring_manager: str
 
 
 def find_jobs() -> list[JobListing]:
     jobs = pick_jobs()
-    search_queries = get_hiring_manager_queries(jobs)
-    hiring_managers: list[str] = find_vanity_urls(search_queries)
-    hiring_manager_names = pd.Series([hiring_manager_linkedin_search(manager) for manager in hiring_managers])
-    jobs = append_to_df(jobs, hiring_manager_names)
+    if 'hiring_manager' in jobs:
+        logger.info("Writing letters...")
+        return compile_jobs(jobs)
+    logger.info("No hiring managers found. Searching for hiring managers...")
+    companies: list[str] = jobs['company'].to_list()
+    search_queries: list[str] = get_hiring_manager_queries(companies)
+    vanity_urls: list[str] = find_vanity_urls(search_queries)
+    hiring_manager_names: list[str] = [hiring_manager_linkedin_search(manager) for manager in vanity_urls]
+    jobs: pd.DataFrame = jobs.assign(hiring_manager=hiring_manager_names)
     jobs.to_csv(OUTPUT, index=False)
     return compile_jobs(jobs)
 
@@ -54,7 +60,7 @@ def pick_jobs() -> pd.DataFrame:
     except FileNotFoundError:
         logger.info("No csv found, creating csv...")
         jobs: pd.DataFrame = scrape_jobs(
-            results_wanted=4,
+            results_wanted=2,
             site_name=["indeed", "linkedin"],
             search_term="User Experience Designer",
             location="New York, NY",  # only needed for indeed / glassdoor
@@ -62,19 +68,27 @@ def pick_jobs() -> pd.DataFrame:
     return jobs
 
 
-def get_hiring_manager_queries(jobs: pd.DataFrame) -> list[str]:
-    companies: list[str] = jobs['company'].to_list()
+def get_hiring_manager_queries(companies: list[str]) -> list[str]:
     logger.info(companies)
-    return [f"site:linkedin.com {company} \"Director of (Design | Product | Marketing | User Experience)\" @gmail.com New York" for company in companies]
+    return [f"site:linkedin.com/in/ {company} \"Director of (Design | Product | Marketing | User Experience)\" @gmail.com New York -posts" for company in companies]
 
 
 def hiring_manager_linkedin_search(vanity_url: str):
     time.sleep(2.0)
-    session = HTMLSession()
-    response = session.get(vanity_url)
-    response.html.render()
-    hiring_manager = response.html.xpath('/html/head/title', first=True)
-    logger.info(hiring_manager)
+    try:
+        session = HTMLSession()
+        response = session.get(vanity_url)
+        response.html.render()
+        hiring_manager_object: Element = response.html.xpath('/html/head/title', first=True)
+        hiring_manager_text: str = str(hiring_manager_object.text)
+        hiring_manager_first_two: list[str] = hiring_manager_text.split(" ")[:2]
+        hiring_manager: str = hiring_manager_first_two[0] + " " + hiring_manager_first_two[1]
+        hiring_manager = hiring_manager.title()
+        logger.info(hiring_manager)
+    except NetworkError as error:
+        logger.error(error)
+        hiring_manager = "Hiring Manager"
+    return hiring_manager
 
 def find_vanity_urls(search_queries) -> list[str]:
     hiring_managers = []
@@ -95,9 +109,18 @@ def find_vanity_urls(search_queries) -> list[str]:
     return hiring_managers
 
 
-def append_to_df(jobs: pd.DataFrame, hiring_managers: pd.Series) -> pd.DataFrame:
-    return pd.concat([jobs, hiring_managers.T], ignore_index=True)
-
-
 def compile_jobs(jobs: pd.DataFrame) -> list[JobListing]:
-    return [JobListing(*listing) for listing in jobs.itertuples()]
+    job_listings = []
+    job_fields = [field.name for field in fields(JobListing)]
+    for _, row in jobs.iterrows():
+        # Clean up column names
+        cleaned_row = {col.strip(): value for col, value in row.items()}
+
+        # Create a dictionary of keyword arguments for JobListing
+        job_kwargs: dict[str, Any] = {field: cleaned_row.get(field, None) for field in job_fields}
+
+        # Create JobListing instance
+        job_listing = JobListing(**job_kwargs)
+        
+        job_listings.append(job_listing)
+    return job_listings
