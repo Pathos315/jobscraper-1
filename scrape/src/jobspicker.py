@@ -2,13 +2,13 @@ from __future__ import annotations
 from http.client import InvalidURL
 import time
 from urllib.error import HTTPError
-from bs4 import BeautifulSoup
+from requests_html import HTMLSession
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 import pandas as pd
 from jobspy import scrape_jobs
-import requests
+from googlesearch import lucky
 from src.configs import DATE
 from src.log import logger
 
@@ -40,8 +40,9 @@ class JobListing:
 def find_jobs() -> list[JobListing]:
     jobs = pick_jobs()
     search_queries = get_hiring_manager_queries(jobs)
-    hiring_managers = hiring_manager_linkedin_search(search_queries)
-    jobs = append_to_df(jobs, hiring_managers)
+    hiring_managers: list[str] = find_vanity_urls(search_queries)
+    hiring_manager_names = pd.Series([hiring_manager_linkedin_search(manager) for manager in hiring_managers])
+    jobs = append_to_df(jobs, hiring_manager_names)
     jobs.to_csv(OUTPUT, index=False)
     return compile_jobs(jobs)
 
@@ -67,32 +68,31 @@ def get_hiring_manager_queries(jobs: pd.DataFrame) -> list[str]:
     return [f"site:linkedin.com {company} \"Director of (Design | Product | Marketing | User Experience)\" @gmail.com New York" for company in companies]
 
 
-def hiring_manager_linkedin_search(search_queries: set[str]) -> pd.Series:
+def hiring_manager_linkedin_search(vanity_url: str):
+    time.sleep(2.0)
+    session = HTMLSession()
+    response = session.get(vanity_url)
+    response.html.render()
+    hiring_manager = response.html.xpath('/html/head/title', first=True)
+    logger.info(hiring_manager)
+
+def find_vanity_urls(search_queries) -> list[str]:
     hiring_managers = []
     headers = {
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0",
     }
-    url = "https://www.google.com/search"
-
 
     for query in search_queries:
-        querystring = {
-            "q":f"site:linkedin.com+{query}+\"(Director+|+Head)+of++(Product+|+User+Experience)+\"+@gmail.com+New+York\""
-                }
         try:
-            time.sleep(2.0)
-            result = requests.get(url, headers=headers, params=querystring)
-            logger.info(result)
-            soup = BeautifulSoup(result.text, features="html.parser")
-            result = str(soup.h3.string).capitalize()
+            result = lucky(query, extra_params=headers)
             logger.info(result)
         except (HTTPError, StopIteration, AttributeError, TypeError, InvalidURL) as error:
             logger.info(error)
             result = "Hiring Manager"
             break
         hiring_managers.append(result)
-    return pd.Series(data=hiring_managers)
+    return hiring_managers
 
 
 def append_to_df(jobs: pd.DataFrame, hiring_managers: pd.Series) -> pd.DataFrame:
