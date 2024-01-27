@@ -1,6 +1,5 @@
 from __future__ import annotations
 from http.client import InvalidURL
-import time
 from urllib.error import HTTPError
 from requests_html import HTMLSession, Element
 from dataclasses import dataclass, fields
@@ -9,11 +8,12 @@ from typing import Any
 import pandas as pd
 from jobspy import scrape_jobs
 from googlesearch import lucky
-from src.configs import DATE
+from src.configs import DATE, CONFIG, PERSONA
 from src.log import logger
 from pyppeteer.errors import NetworkError
 
-OUTPUT = Path.cwd() / Path(f"{DATE}_joblistings.csv")
+OUTPUT = Path.cwd() / f"{DATE}_joblistings.csv"
+HIRING_MANAGER_DEFAULT = "Hiring Manager"
 
 
 @dataclass
@@ -36,6 +36,7 @@ class JobListing:
     benefits: Any
     emails: Any
     description: Any
+    vanity_urls: str
     hiring_manager: str
 
 
@@ -56,14 +57,21 @@ def find_jobs() -> list[JobListing]:
     if "hiring_manager" in jobs:
         logger.info("Writing letters...")
         return compile_jobs(jobs)
+
     logger.info("No hiring managers found. Searching for hiring managers...")
     companies: list[str] = jobs["company"].to_list()
     search_queries: list[str] = get_hiring_manager_queries(companies)
-    vanity_urls: list[str] = find_vanity_urls(search_queries)
+    vanity_urls = find_vanity_urls(search_queries)
+    jobs: pd.DataFrame = jobs.assign(vanity_urls=vanity_urls)
     hiring_manager_names: list[str] = [
         hiring_manager_linkedin_search(manager) for manager in vanity_urls
     ]
-    jobs: pd.DataFrame = jobs.assign(hiring_manager=hiring_manager_names)
+    try:
+        jobs: pd.DataFrame = jobs.assign(hiring_manager=hiring_manager_names)
+    except ValueError as warning:
+        logger.warning(
+            f"{warning} | Hiring managers will be excluded from this .csv file."
+        )
     jobs.to_csv(OUTPUT, index=False)
     return compile_jobs(jobs)
 
@@ -78,17 +86,20 @@ def pick_jobs() -> pd.DataFrame:
     This function attempts to read job listings from a CSV file. If the file is not found,
     it creates a new CSV file by scraping job listings using the 'scrape_jobs' function.
     """
-
+    results_wanted = CONFIG.number_results_wanted
+    if results_wanted > 9:
+        logger.warning("Capping results count at 9 to prevent 429 Error Codes.")
+        results_wanted = 9
     try:
         logger.info("Picking jobs from csv...")
         jobs = pd.read_csv(OUTPUT)
     except FileNotFoundError:
         logger.info("No csv found, creating csv...")
         jobs: pd.DataFrame = scrape_jobs(
-            results_wanted=2,
-            site_name=["indeed", "linkedin"],
-            search_term="User Experience Designer",
-            location="New York, NY",  # only needed for indeed / glassdoor
+            results_wanted=results_wanted,
+            site_name=CONFIG.job_boards,
+            search_term=CONFIG.desired_role,
+            location=PERSONA.location,  # only needed for indeed / glassdoor
         )
     return jobs
 
@@ -116,10 +127,23 @@ def get_hiring_manager_queries(companies: list[str]) -> list[str]:
 
     """
     logger.info(companies)
-    return [
-        f'site:linkedin.com/in/ {company} "Director of (Design | Product | Marketing | User Experience)" @gmail.com New York -posts'
-        for company in companies
-    ]
+    return [CONFIG.google_search_query.format(company) for company in companies]
+
+
+def get_hiring_manager_text(hm_element: Element) -> str | None:
+    if hm_element:
+        return str(hm_element.text)
+    else:
+        logger.warning("Title element not found on the page.")
+        return None
+
+
+def format_hiring_manager(text: str | None) -> str:
+    if text:
+        first_two_words: list[str] = text.split(" ")[:2]
+        return f"{first_two_words[0]} {first_two_words[1]}".title()
+    else:
+        return HIRING_MANAGER_DEFAULT
 
 
 def hiring_manager_linkedin_search(vanity_url: str) -> str:
@@ -132,47 +156,24 @@ def hiring_manager_linkedin_search(vanity_url: str) -> str:
     Returns:
         str: the formatted name of the hiring manager
     """
-    time.sleep(2.0)
     try:
-        session = HTMLSession()
-        response = session.get(vanity_url)
-        response.html.render()
-        hiring_manager = format_name_candidate(response)
+        with HTMLSession() as session:
+            response = session.get(vanity_url)
+            response.html.render(
+                retries=3,
+                timeout=10,
+            )
+            hiring_manager_element: Element = response.html.xpath(
+                "/html/head/title",
+                first=True,
+            )
+            logger.info(hiring_manager_element)
+            hiring_manager_text = get_hiring_manager_text(hiring_manager_element)
+            hiring_manager = format_hiring_manager(hiring_manager_text)
+            logger.info(hiring_manager)
     except NetworkError as error:
         logger.error(error)
-        hiring_manager = "Hiring Manager"
-    return hiring_manager
-
-
-def format_name_candidate(response) -> str:
-    """
-    Extract and format the name of a hiring manager from an HTML response.
-
-    Parameters:
-    - response: A response object containing HTML data.
-
-    Returns:
-    - str: The formatted name of the hiring manager extracted from the HTML response.
-
-    This function extracts the title element from the HTML head of the response and
-    retrieves the first two words from the title. The extracted words are then combined
-    and formatted to title case, representing the hiring manager's name.
-
-    Example:
-    >>> html_response = HTMLResponse('<html><head><title>John Doe - LinkedIn</title></head></html>')
-    >>> formatted_name = format_name_candidate(html_response)
-    >>> print(formatted_name)
-    'John Doe'
-
-    """
-    hiring_manager_object: Element = response.html.xpath("/html/head/title", first=True)
-    hiring_manager_text: str = str(hiring_manager_object.text)
-    hiring_manager_first_two_words: list[str] = hiring_manager_text.split(" ")[:2]
-    hiring_manager_raw: str = (
-        hiring_manager_first_two_words[0] + " " + hiring_manager_first_two_words[1]
-    )
-    hiring_manager = hiring_manager_raw.title()
-    logger.info(hiring_manager)
+        hiring_manager = HIRING_MANAGER_DEFAULT
     return hiring_manager
 
 
@@ -200,14 +201,12 @@ def find_vanity_urls(search_queries) -> list[str]:
 
     """
     vanity_urls = []
-    headers = {
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0",
-    }
-
     for query in search_queries:
         try:
-            result = lucky(query, extra_params=headers)
+            result = lucky(
+                query,
+                pause=3.0,
+            )
             logger.info(result)
         except (
             HTTPError,
@@ -216,8 +215,8 @@ def find_vanity_urls(search_queries) -> list[str]:
             TypeError,
             InvalidURL,
         ) as error:
-            logger.info(error)
-            result = "Hiring Manager"
+            logger.error(error)
+            result = HIRING_MANAGER_DEFAULT
             break
         vanity_urls.append(result)
     return vanity_urls

@@ -1,60 +1,29 @@
 {
     "export_directory": "scrape/exports",
+    "logging_file_path": "scrape/src/logging_config.json",
+    "letter_format_path":  "scrape/src/letter_format.json",
     "font_regular": "scrape/fonts/IBMPlexSans-Regular.ttf",
     "font_bold": "scrape/fonts/IBMPlexSans-Bold.ttf",
     "font_italic": "scrape/fonts/IBMPlexSans-Italic.ttf",
     "font_bolditalic": "scrape/fonts/IBMPlexSans-BoldItalic.ttf",
+    "google_search_query": "site:linkedin.com/in/ \"{}\" \"Director of (Design | Product | Marketing | User Experience)\" @gmail.com New York -posts",
+    "desired_role": "User Experience Designer",
+    "job_boards": [
+        "indeed"
+    ],
+    "number_results_wanted": 5,
+    "web_header": {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0",
+        "Referer": "https://www.google.com"
+    },
     "persona": {
         "name": "John Fallot",
         "email": "john.fallot@gmail.com",
         "portfolio": "",
         "phone": "631-745-1589",
         "signature": "signature.example.png",
-        "calendly": "https://calendly.com/johnfallot/30min"
-    },
-    "logging_config": {
-        "version": 1,
-        "disable_existing_loggers": false,
-        "formatters": {
-            "simple": {
-                "format": "[jobscraper]: %(asctime)s - %(message)s"
-            },
-            "detailed": {
-                "format": "[jobscraper: %(levelname)s|%(module)s|L%(lineno)d]: %(message)s",
-                "datefmt": "%Y-%m-%dT%H:%M:%S%z"
-            }
-        },
-        "handlers": {
-            "stderr": {
-                "class": "logging.StreamHandler",
-                "level": "WARNING",
-                "formatter": "detailed",
-                "stream": "ext://sys.stderr"
-            },
-            "stdout": {
-                "class": "logging.StreamHandler",
-                "level": "INFO",
-                "formatter": "detailed",
-                "stream": "ext://sys.stdout"
-            },
-            "file": {
-                "class": "logging.handlers.RotatingFileHandler",
-                "level": "DEBUG",
-                "formatter": "simple",
-                "filename": ".logs/jobscraper.log",
-                "maxBytes": 20000000,
-                "backupCount": 2
-            }
-        },
-        "loggers": {
-            "root": {
-                "level": "INFO",
-                "handlers": [
-                    "stderr",
-                    "stdout",
-                    "file"
-                ]
-            }
-        }
+        "calendly": "https://calendly.com/johnfallot/30min",
+        "location": "New York, NY"
     }
 }

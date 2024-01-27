@@ -1,5 +1,7 @@
 r"Generates a cover letter"
 from dataclasses import dataclass
+import json
+from os import rename as move_file
 from pathlib import Path
 from typing import Any
 
@@ -15,12 +17,13 @@ from src.configs import (
     FONT_NAMES,
     FONT_STYLE,
     UTF,
+    CONFIG,
     JobScrapeConfig,
     PersonaConfig,
 )
-from src.dir import change_dir
 from src.jobspicker import JobListing
 from src.striptags import strip_tags
+from src.log import logger
 
 reportlab.rl_config.warnOnMissingFontGlyphs = 0  # type: ignore
 
@@ -32,6 +35,19 @@ ALL_ATTR_NAMES = [
     "outro",
     "close",
 ]
+
+
+@dataclass
+class LetterFormat:
+    address: str
+    date: str
+    salutation: str
+    introduction: str
+    skills: str
+    activities: str
+    invite: str
+    outro: str
+    close: str
 
 
 @dataclass
@@ -139,11 +155,15 @@ class CoverLetterPrinter:
     def __call__(self):
         self.register_fonts()
         self.add_styles()
-        self.write_cover_letter()
         output_directory = Path(f"scrape/exports/{DATE}_exports")
         output_directory.mkdir(exist_ok=True)
         letter_txt_path = (
             output_directory / f"{DATE}_{self.cover_letter.subject}_CoverLetter.txt"
+        )
+        self.write_cover_letter()
+        move_file(
+            self.cover_letter.letter_title,
+            output_directory / self.cover_letter.letter_title,
         )
         with open(letter_txt_path, "w") as txt_file:
             txt_file.write(self.coverletter_as_txt)
