@@ -1,5 +1,6 @@
 from __future__ import annotations
 from http.client import InvalidURL
+import time
 from urllib.error import HTTPError
 from requests_html import HTMLSession, Element
 from dataclasses import dataclass, fields
@@ -162,13 +163,19 @@ def hiring_manager_linkedin_search(vanity_url: str) -> str:
             response.html.render(
                 retries=3,
                 timeout=10,
+                pause=0.5,
+                sleep=1.0,
             )
-            hiring_manager_element: Element = response.html.xpath(
+            hiring_manager_element = response.html.xpath(
                 "/html/head/title",
-                first=True,
             )
             logger.info(hiring_manager_element)
-            hiring_manager_text = get_hiring_manager_text(hiring_manager_element)
+            hiring_manager_candidate = (
+                hiring_manager_element[1]
+                if hiring_manager_element[0] == "Sign Up"
+                else hiring_manager_element[0]
+            )
+            hiring_manager_text = get_hiring_manager_text(hiring_manager_candidate)
             hiring_manager = format_hiring_manager(hiring_manager_text)
             logger.info(hiring_manager)
     except NetworkError as error:
@@ -203,6 +210,7 @@ def find_vanity_urls(search_queries) -> list[str]:
     vanity_urls = []
     for query in search_queries:
         try:
+            time.sleep(2.0)
             result = lucky(
                 query,
                 pause=3.0,
