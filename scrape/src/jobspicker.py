@@ -163,7 +163,7 @@ def hiring_manager_linkedin_search(vanity_url: str) -> str:
             response.html.render(
                 retries=3,
                 timeout=10,
-                pause=0.5,
+                wait=0.5,
                 sleep=1.0,
             )
             hiring_manager_element = response.html.xpath(
