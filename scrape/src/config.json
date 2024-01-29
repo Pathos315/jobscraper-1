@@ -8,6 +8,8 @@
     "font_bolditalic": "scrape/fonts/IBMPlexSans-BoldItalic.ttf",
     "google_search_query": "site:linkedin.com/in/ \"{}\" \"Director of (Design | Product | Marketing | User Experience)\" @gmail.com New York -posts",
     "desired_role": "User Experience Designer",
+    "persona_path": "scrape/src/persona.env",
+    "linkedin_credentials_path": "scrape/src/credentials.env",
     "job_boards": [
         "indeed"
     ],
@@ -16,14 +18,5 @@
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0",
         "Referer": "https://www.google.com"
-    },
-    "persona": {
-        "name": "John Fallot",
-        "email": "john.fallot@gmail.com",
-        "portfolio": "",
-        "phone": "631-745-1589",
-        "signature": "signature.example.png",
-        "calendly": "https://calendly.com/johnfallot/30min",
-        "location": "New York, NY"
     }
 }

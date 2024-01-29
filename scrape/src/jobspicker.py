@@ -17,8 +17,10 @@ from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
-load_dotenv(Path("scrape/src/credentials.env").resolve())
-home_url = "https://www.linkedin.com/"
+from src.configs import CONFIG
+
+load_dotenv(Path(CONFIG.linkedin_credentials_path).resolve())
+HOME_URL = "https://www.linkedin.com/"
 KEY = os.environ.get("SESSION_KEY")
 PASSWORD = os.environ.get("SESSION_PASSWORD")
 
@@ -116,7 +118,7 @@ def pick_jobs() -> pd.DataFrame:
             results_wanted=results_wanted,
             site_name=CONFIG.job_boards,
             search_term=CONFIG.desired_role,
-            location=PERSONA.location,  # only needed for indeed / glassdoor
+            location="New York, NY",  # only needed for indeed / glassdoor
         )
     return jobs
 
@@ -176,7 +178,7 @@ def hiring_manager_search(vanity_urls: list[str]) -> list[str]:
     hiring_managers = []
     firefox_options = FirefoxOptions()
     driver = webdriver.Firefox(options=firefox_options)
-    driver.get(home_url)
+    driver.get(HOME_URL)
     driver.implicitly_wait(5.0)
     login_field = driver.find_element(By.XPATH, "//*[@id='session_key']")
     password_field = driver.find_element(By.XPATH, "//*[@id='session_password']")

@@ -19,19 +19,6 @@ FONT_STYLE = "Main"
 
 
 @dataclass
-class PersonaConfig:
-    """A dataclass containing information on you, the applicant."""
-
-    name: str
-    email: str
-    portfolio: str
-    phone: str
-    signature: str
-    calendly: str
-    location: str
-
-
-@dataclass
 class JobScrapeConfig:
     """A dataclass containing information on both the job query and cover letter settings."""
 
@@ -45,14 +32,15 @@ class JobScrapeConfig:
     google_search_query: str
     desired_role: str
     number_results_wanted: int
+    persona_path: str
+    linkedin_credentials_path: str
     job_boards: list[str] = field(default_factory=list)
     web_header: dict = field(default_factory=dict)
-    persona: dict = field(default_factory=dict)
 
 
 def read_config(
     config_file: str | Path,
-) -> tuple[JobScrapeConfig, PersonaConfig]:
+) -> JobScrapeConfig:
     """read_config takes the json configuration file and returns the
     configuration and information about you, the applicant.
 
@@ -64,10 +52,8 @@ def read_config(
     """
     with open(config_file, mode="r", encoding=UTF) as file:
         data = json.load(file)
-        persona = data["persona"]
-        return JobScrapeConfig(**data), PersonaConfig(**persona)
+        return JobScrapeConfig(**data)
 
 
 CONFIG_STR = "scrape/src/config.json"
-CONFIG_PATH = Path(CONFIG_STR).resolve()
-CONFIG, PERSONA = read_config(CONFIG_PATH)
+CONFIG = read_config(Path(CONFIG_STR).resolve())
