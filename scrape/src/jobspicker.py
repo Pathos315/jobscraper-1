@@ -1,8 +1,28 @@
 from __future__ import annotations
 from http.client import InvalidURL
+import os
+from pathlib import Path
 import time
+from pyppeteer.errors import NetworkError
+import requests
+from dotenv import load_dotenv
+from requests_html import HTMLSession, Element, HTMLResponse
+from selenium import webdriver
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+
+load_dotenv(Path("scrape/src/credentials.env").resolve())
+home_url = "https://www.linkedin.com/"
+KEY = os.environ.get("SESSION_KEY")
+PASSWORD = os.environ.get("SESSION_PASSWORD")
+
 from urllib.error import HTTPError
-from requests_html import HTMLSession, Element
 from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any
@@ -11,9 +31,8 @@ from jobspy import scrape_jobs
 from googlesearch import lucky
 from src.configs import DATE, CONFIG, PERSONA
 from src.log import logger
-from pyppeteer.errors import NetworkError
 
-OUTPUT = Path.cwd() / f"{DATE}_joblistings.csv"
+OUTPUT = Path.cwd() / f"{DATE}_joblistings_2.csv"
 HIRING_MANAGER_DEFAULT = "Hiring Manager"
 
 
@@ -58,15 +77,12 @@ def find_jobs() -> list[JobListing]:
     if "hiring_manager" in jobs:
         logger.info("Writing letters...")
         return compile_jobs(jobs)
-
     logger.info("No hiring managers found. Searching for hiring managers...")
     companies: list[str] = jobs["company"].to_list()
     search_queries: list[str] = get_hiring_manager_queries(companies)
     vanity_urls = find_vanity_urls(search_queries)
     jobs: pd.DataFrame = jobs.assign(vanity_urls=vanity_urls)
-    hiring_manager_names: list[str] = [
-        hiring_manager_linkedin_search(manager) for manager in vanity_urls
-    ]
+    hiring_manager_names: list[str] = hiring_manager_search(vanity_urls)
     try:
         jobs: pd.DataFrame = jobs.assign(hiring_manager=hiring_manager_names)
     except ValueError as warning:
@@ -131,9 +147,9 @@ def get_hiring_manager_queries(companies: list[str]) -> list[str]:
     return [CONFIG.google_search_query.format(company) for company in companies]
 
 
-def get_hiring_manager_text(hm_element: Element) -> str | None:
+def get_hiring_manager_text(hm_element) -> str | None:
     if hm_element:
-        return str(hm_element.text)
+        return str(hm_element)
     else:
         logger.warning("Title element not found on the page.")
         return None
@@ -147,7 +163,7 @@ def format_hiring_manager(text: str | None) -> str:
         return HIRING_MANAGER_DEFAULT
 
 
-def hiring_manager_linkedin_search(vanity_url: str) -> str:
+def hiring_manager_search(vanity_urls: list[str]) -> list[str]:
     """hiring_manager_linkedin_search uses requests-html to get the title tag of the LinkedIn page,
     which should contain the hiring manager's name.
 
@@ -157,31 +173,32 @@ def hiring_manager_linkedin_search(vanity_url: str) -> str:
     Returns:
         str: the formatted name of the hiring manager
     """
-    try:
-        with HTMLSession() as session:
-            response = session.get(vanity_url)
-            response.html.render(
-                retries=3,
-                timeout=10,
-                wait=0.5,
-                sleep=1.0,
-            )
-            hiring_manager_element = response.html.xpath(
-                "/html/head/title",
-            )
-            logger.info(hiring_manager_element)
-            hiring_manager_candidate = (
-                hiring_manager_element[1]
-                if hiring_manager_element[0] == "Sign Up"
-                else hiring_manager_element[0]
-            )
-            hiring_manager_text = get_hiring_manager_text(hiring_manager_candidate)
-            hiring_manager = format_hiring_manager(hiring_manager_text)
-            logger.info(hiring_manager)
-    except NetworkError as error:
-        logger.error(error)
-        hiring_manager = HIRING_MANAGER_DEFAULT
-    return hiring_manager
+    hiring_managers = []
+    firefox_options = FirefoxOptions()
+    with webdriver.Firefox(options=firefox_options) as driver:
+        linkedin_login(driver)
+        for url in vanity_urls:
+            driver.implicitly_wait(3.0)
+            driver.get(url)
+            time.sleep(5.0)
+            logger.info(driver.title)
+            manager_name = format_hiring_manager(driver.title)
+            hiring_managers.append(manager_name)
+    return hiring_managers
+
+
+def linkedin_login(driver: webdriver.Firefox):
+    driver.get(home_url)
+    driver.implicitly_wait(5.0)
+    login_field = driver.find_element(By.XPATH, "//*[@id='session_key']")
+    password_field = driver.find_element(By.XPATH, "//*[@id='session_password']")
+    submit_button = driver.find_element(
+        By.XPATH,
+        "/html/body/main/section[1]/div/div/form/div[2]/button",
+    )
+    login_field.send_keys(KEY)
+    password_field.send_keys(PASSWORD)
+    submit_button.click()
 
 
 def find_vanity_urls(search_queries) -> list[str]:
@@ -208,25 +225,32 @@ def find_vanity_urls(search_queries) -> list[str]:
 
     """
     vanity_urls = []
-    for query in search_queries:
-        try:
-            time.sleep(2.0)
-            result = lucky(
-                query,
-                pause=3.0,
-            )
+    with requests.sessions.Session() as client:
+        client.headers["User-Agent"] = CONFIG.web_header["User-Agent"]
+        for query in search_queries:
+            try:
+                result = lucky(
+                    query,
+                    num=1,
+                    stop=1,
+                    country="US",
+                    pause=3.0,
+                    extra_params=client.headers,
+                    user_agent=client.headers["User-Agent"],
+                    verify_ssl=False,
+                )
+            except (
+                HTTPError,
+                StopIteration,
+                AttributeError,
+                TypeError,
+                InvalidURL,
+            ) as error:
+                logger.error(error)
+                result = HIRING_MANAGER_DEFAULT
+                break
             logger.info(result)
-        except (
-            HTTPError,
-            StopIteration,
-            AttributeError,
-            TypeError,
-            InvalidURL,
-        ) as error:
-            logger.error(error)
-            result = HIRING_MANAGER_DEFAULT
-            break
-        vanity_urls.append(result)
+            vanity_urls.append(result)
     return vanity_urls
 
 

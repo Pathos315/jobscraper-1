@@ -17,3 +17,4 @@ Pipfile
 **.csv
 jobscraper_printedlogs/jobscraper_printedlogs.log
 .DS_Store
+**.env
