@@ -176,29 +176,25 @@ def hiring_manager_search(vanity_urls: list[str]) -> list[str]:
     hiring_managers = []
     firefox_options = FirefoxOptions()
     with webdriver.Firefox(options=firefox_options) as driver:
-        linkedin_login(driver)
+        driver.get(home_url)
+        driver.implicitly_wait(5.0)
+        login_field = driver.find_element(By.XPATH, "//*[@id='session_key']")
+        password_field = driver.find_element(By.XPATH, "//*[@id='session_password']")
+        submit_button = driver.find_element(
+            By.XPATH,
+            "/html/body/main/section[1]/div/div/form/div[2]/button",
+        )
+        login_field.send_keys(KEY)
+        password_field.send_keys(PASSWORD)
+        submit_button.click()
+        driver.implicitly_wait(5.0)
         for url in vanity_urls:
-            driver.implicitly_wait(3.0)
             driver.get(url)
             time.sleep(5.0)
             logger.info(driver.title)
             manager_name = format_hiring_manager(driver.title)
             hiring_managers.append(manager_name)
     return hiring_managers
-
-
-def linkedin_login(driver: webdriver.Firefox):
-    driver.get(home_url)
-    driver.implicitly_wait(5.0)
-    login_field = driver.find_element(By.XPATH, "//*[@id='session_key']")
-    password_field = driver.find_element(By.XPATH, "//*[@id='session_password']")
-    submit_button = driver.find_element(
-        By.XPATH,
-        "/html/body/main/section[1]/div/div/form/div[2]/button",
-    )
-    login_field.send_keys(KEY)
-    password_field.send_keys(PASSWORD)
-    submit_button.click()
 
 
 def find_vanity_urls(search_queries) -> list[str]:
