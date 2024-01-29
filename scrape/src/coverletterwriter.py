@@ -27,7 +27,7 @@ from src.striptags import strip_tags
 
 reportlab.rl_config.warnOnMissingFontGlyphs = 0  # type: ignore
 
-load_dotenv(Path(CONFIG.linkedin_credentials_path).resolve())
+load_dotenv(Path(CONFIG.persona_path).resolve())
 
 PERSONA_NAME = os.environ.get("PERSONA_NAME")
 PERSONA_EMAIL = os.environ.get("PERSONA_EMAIL")
