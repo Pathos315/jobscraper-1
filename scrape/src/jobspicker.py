@@ -3,37 +3,26 @@ from http.client import InvalidURL
 import os
 from pathlib import Path
 import time
-from pyppeteer.errors import NetworkError
 import requests
 from dotenv import load_dotenv
-from requests_html import HTMLSession, Element, HTMLResponse
 from selenium import webdriver
-from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
-from src.configs import CONFIG
+from urllib.error import HTTPError
+from dataclasses import dataclass, fields
+from typing import Any
+import pandas as pd
+from jobspy import scrape_jobs
+from googlesearch import lucky
+from src.configs import DATE, CONFIG
+from src.log import logger
+
 
 load_dotenv(Path(CONFIG.linkedin_credentials_path).resolve())
 HOME_URL = "https://www.linkedin.com/"
 KEY = os.environ.get("SESSION_KEY")
 PASSWORD = os.environ.get("SESSION_PASSWORD")
-
-from urllib.error import HTTPError
-from dataclasses import dataclass, fields
-from pathlib import Path
-from typing import Any
-import pandas as pd
-from jobspy import scrape_jobs
-from googlesearch import lucky
-from src.configs import DATE, CONFIG, PERSONA
-from src.log import logger
-
 OUTPUT = Path.cwd() / f"{DATE}_joblistings_2.csv"
 HIRING_MANAGER_DEFAULT = "Hiring Manager"
 
@@ -178,7 +167,9 @@ def hiring_manager_search(vanity_urls: list[str]) -> list[str]:
     hiring_managers = []
     firefox_options = FirefoxOptions()
     driver = webdriver.Firefox(options=firefox_options)
+
     driver.get(HOME_URL)
+    create_cookies(driver)
     driver.implicitly_wait(5.0)
     login_field = driver.find_element(By.XPATH, "//*[@id='session_key']")
     password_field = driver.find_element(By.XPATH, "//*[@id='session_password']")
@@ -200,6 +191,35 @@ def hiring_manager_search(vanity_urls: list[str]) -> list[str]:
     driver.close()
     driver.quit()
     return hiring_managers
+
+
+def create_cookies(driver: webdriver.Firefox):
+    driver.add_cookie(
+        {
+            "name": "JSESSIONID",
+            "value": "ajax:5637557548643047942",
+            "sameSite": "None",
+            "Path": "/",
+            "Domain": ".www.linkedin.com",
+            "Secure": "True",
+        }
+    )
+    driver.add_cookie({"name": "lang", "value": "v=2&lang=en-us"})
+    driver.add_cookie(
+        {"name": "bcookie", "value": "v=2&333261d3-872a-4eac-85ff-b4a1ddcc117e"}
+    )
+    driver.add_cookie(
+        {
+            "name": "bscookie",
+            "value": "v=1&20240130002126e5c50611-57f7-4a2b-838e-8bfaa2e56a86AQEj2X4zJVHdNdcCxn_sLZ8wFEfW5_l9",
+        }
+    )
+    driver.add_cookie(
+        {
+            "name": "lidc",
+            "value": "b=TGST09:s=T:r=T:a=T:p=T:g=2682:u=1:x=1:i=1706574086:t=1706660486:v=2:sig=AQE55Mbx_f1LVuDB8siC9_H-lewpC9_p",
+        }
+    )
 
 
 def find_vanity_urls(search_queries) -> list[str]:
@@ -226,8 +246,9 @@ def find_vanity_urls(search_queries) -> list[str]:
 
     """
     vanity_urls = []
-    with requests.sessions.Session() as client:
-        client.headers["User-Agent"] = CONFIG.web_header["User-Agent"]
+    with requests.Session() as client:
+        client.headers = CONFIG.google_web_headers
+        user_agent = client.headers["user-agent"]
         for query in search_queries:
             try:
                 result = lucky(
@@ -237,7 +258,7 @@ def find_vanity_urls(search_queries) -> list[str]:
                     country="US",
                     pause=3.0,
                     extra_params=client.headers,
-                    user_agent=client.headers["User-Agent"],
+                    user_agent=user_agent,
                     verify_ssl=False,
                 )
             except (
@@ -249,7 +270,6 @@ def find_vanity_urls(search_queries) -> list[str]:
             ) as error:
                 logger.error(error)
                 result = HIRING_MANAGER_DEFAULT
-                break
             logger.info(result)
             vanity_urls.append(result)
     return vanity_urls

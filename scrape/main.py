@@ -1,6 +1,6 @@
 from time import perf_counter
 
-from src.configs import CONFIG, PERSONA
+from src.configs import CONFIG
 from src.coverletterwriter import CoverLetterContents, CoverLetterPrinter
 from src.jobspicker import find_jobs
 from src.log import logger
@@ -16,10 +16,8 @@ def main() -> None:
     logger.info("Initializing Jobscraper Program...")
     all_jobs = find_jobs()
     for job in tqdm(all_jobs):
-        letter_contents: CoverLetterContents = CoverLetterContents(job, PERSONA, CONFIG)
-        letter_printer: CoverLetterPrinter = CoverLetterPrinter(
-            CONFIG, PERSONA, letter_contents
-        )
+        letter_contents: CoverLetterContents = CoverLetterContents(job, CONFIG)
+        letter_printer: CoverLetterPrinter = CoverLetterPrinter(CONFIG, letter_contents)
         letter_printer()
 
     elapsed = perf_counter() - start

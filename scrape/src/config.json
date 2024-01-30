@@ -6,7 +6,7 @@
     "font_bold": "scrape/fonts/IBMPlexSans-Bold.ttf",
     "font_italic": "scrape/fonts/IBMPlexSans-Italic.ttf",
     "font_bolditalic": "scrape/fonts/IBMPlexSans-BoldItalic.ttf",
-    "google_search_query": "site:linkedin.com/in/ \"{}\" \"Director of (Design | Product | Marketing | User Experience)\" @gmail.com New York -posts",
+    "google_search_query": "site:linkedin.com/in/ \"{}\" \"Recruiter\" @gmail.com New York -posts",
     "desired_role": "User Experience Designer",
     "persona_path": "scrape/src/persona.env",
     "linkedin_credentials_path": "scrape/src/credentials.env",
@@ -14,9 +14,8 @@
         "indeed"
     ],
     "number_results_wanted": 5,
-    "web_header": {
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0",
-        "Referer": "https://www.google.com"
+    "google_web_headers": {
+        "cookie": "1P_JAR=2024-01-30-00; AEC=Ae3NU9MjvWM0EYy0fgB6VCPJb0bbOv80M8i7EBsrfkDY_W12crApTSXmLw; NID=511%3Dq9G-w00bsGDh7CpTRRiO8ZWC1csSYPtyh0c1b4sbCqmirx4S4wQS-IiJs1pwSP9mLpcCyY7xy1xhrG9xfKjF2adASdvxOV042rK1XQPOkr-c3QmutjYD85pTNYZxD16qONiYJsvf-Apj1w_Ah2ldVcp6v_HSpAxxS7DdrGSiQfo",
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0"
     }
 }
