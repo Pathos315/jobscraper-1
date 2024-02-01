@@ -7,7 +7,6 @@
     "font_italic": "scrape/fonts/IBMPlexSans-Italic.ttf",
     "font_bolditalic": "scrape/fonts/IBMPlexSans-BoldItalic.ttf",
     "google_search_query": "site:linkedin.com/in/ \"{}\" \"Recruiter\" @gmail.com New York -posts",
-    "desired_role": "User Experience Designer",
     "persona_path": "scrape/src/persona.env",
     "linkedin_credentials_path": "scrape/src/credentials.env",
     "job_boards": [

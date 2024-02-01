@@ -27,15 +27,35 @@ from src.striptags import strip_tags
 
 reportlab.rl_config.warnOnMissingFontGlyphs = 0  # type: ignore
 
+
 load_dotenv(Path(CONFIG.persona_path).resolve())
 
-PERSONA_NAME = os.environ.get("PERSONA_NAME")
-PERSONA_EMAIL = os.environ.get("PERSONA_EMAIL")
-PERSONA_PORTFOLIO = os.environ.get("PORTFOLIO")
-PERSONA_PHONE = os.environ.get("PERSONA_PHONE")
-SIGNATURE_PATH = os.environ.get("SIGNATURE_PATH")
-CALENDLY_LINK = os.environ.get("CALENDLY_LINK")
-LOCATION = os.environ.get("LOCATION")
+
+ALL_ENVIRON_KEYS = [
+    "NAME",
+    "EMAIL",
+    "PORTFOLIO",
+    "LOCATION",
+    "DESIRED_ROLE",
+    "PHONE",
+    "SIGNATURE_PATH",
+    "CALENDLY",
+]
+
+
+@dataclass(slots=True, repr=False)
+class PersonaConfig:
+    name: str | None
+    email: str | None
+    portfolio: str | None
+    location: str | None
+    desired_role: str | None
+    phone: str | None
+    signature_path: str | None
+    calendly: str | None
+
+
+persona = PersonaConfig(os.environ.get(key) for key in ALL_ENVIRON_KEYS)
 
 ALL_ATTR_NAMES = [
     "address",
@@ -70,7 +90,7 @@ class CoverLetterContents:
     @property
     def signature(self):
         return Image(
-            filename=Path.cwd() / SIGNATURE_PATH,
+            filename=Path.cwd() / persona.signature_path,
             width=80,
             height=40,
             hAlign="LEFT",
@@ -82,24 +102,24 @@ class CoverLetterContents:
 
     @property
     def letter_title(self) -> str:
-        return f"{DATE}_{self.listing.company}_{PERSONA_NAME}.pdf"
+        return f"{DATE}_{self.listing.company}_{persona.name}.pdf"
 
     @property
     def subject(self) -> str:
-        return f"{PERSONA_NAME}'s Cover Letter for {self.listing.company}"
+        return f"{persona.name}'s Cover Letter for {self.listing.company}"
 
     @property
     def portfolio(self) -> str:
         return (
-            f"My portfolio is at <a href={PERSONA_PORTFOLIO} {self.link_color}>{PERSONA_PORTFOLIO}</a>."
-            if PERSONA_PORTFOLIO != ""
+            f"My portfolio is at <a href={persona.portfolio} {self.link_color}>{persona.portfolio}</a>."
+            if persona.portfolio != ""
             else "My portfolio is available upon request."
         )
 
     def __call__(self) -> str | None:
         """The collection of strings and variables that make up the copy of the cover letter."""
 
-        self.address: str = f"{PERSONA_NAME}<br />\
+        self.address: str = f"{persona.name}<br />\
             {DATE}<br /><br />\
             Dear {self.listing.hiring_manager},"
 
@@ -115,19 +135,19 @@ class CoverLetterContents:
 
         self.invite: str = f"At a time that works with your schedule, would you be free for a 30 minute \
                             meeting via Zoom or phone? For your convenience, I'm including a \
-                            <a href={CALENDLY_LINK} {self.link_color}>link</a> to my calendar. \
+                            <a href={persona.calendly} {self.link_color}>link</a> to my calendar. \
                             Feel free to select a time that works best for you."
 
         self.outro: str = f"Thanks for your consideration. I look forward to helping \
                             {str(self.listing.company).strip()}'s continued success.\
-                            Feel free to contact me at <a href='mailto:{PERSONA_EMAIL}' {self.link_color}>{PERSONA_EMAIL}</a>, or by phone at {PERSONA_PHONE}.\
+                            Feel free to contact me at <a href='mailto:{persona.email}' {self.link_color}>{persona.email}</a>, or by phone at {persona.phone}.\
                             {self.portfolio}<br />"
 
         self.close: str = "Warm regards,<br />"
 
         self.whole_letter: str = f"{self.address} {self.introduction} \
                             {self.body} {self.invite}\
-                            {self.outro} {self.close} {PERSONA_NAME}"
+                            {self.outro} {self.close} {persona.name}"
 
 
 @dataclass
@@ -145,8 +165,8 @@ class CoverLetterPrinter:
             topMargin=inch,
             bottomMargin=inch,
             title=self.cover_letter.letter_title,
-            author=PERSONA_NAME,
-            creator=PERSONA_NAME,
+            author=persona.name,
+            creator=persona.name,
             description=self.cover_letter.subject,
         )
 
@@ -229,7 +249,7 @@ class CoverLetterPrinter:
             Paragraph(paragraph, style=main_style) for paragraph in paragraphs
         ]
         paragraphs.append(self.cover_letter.signature)
-        paragraphs.append(Paragraph(PERSONA_NAME, style=main_style))
+        paragraphs.append(Paragraph(persona.name, style=main_style))
         return paragraphs
 
     def write_cover_letter(self):
