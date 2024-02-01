@@ -23,7 +23,7 @@ load_dotenv(Path(CONFIG.linkedin_credentials_path).resolve())
 HOME_URL = "https://www.linkedin.com/"
 KEY = os.environ.get("SESSION_KEY")
 PASSWORD = os.environ.get("SESSION_PASSWORD")
-OUTPUT = Path.cwd() / f"{DATE}_joblistings_2.csv"
+OUTPUT = Path.cwd() / f"{DATE}_joblistings.csv"
 HIRING_MANAGER_DEFAULT = "Hiring Manager"
 
 
@@ -135,7 +135,10 @@ def get_hiring_manager_queries(companies: list[str]) -> list[str]:
 
     """
     logger.info(companies)
-    return [CONFIG.google_search_query.format(company) for company in companies]
+    return [
+        CONFIG.google_search_query.format(company.strip().replace(" ", "+"))
+        for company in companies
+    ]
 
 
 def get_hiring_manager_text(hm_element) -> str | None:
@@ -154,7 +157,7 @@ def format_hiring_manager(text: str | None) -> str:
         return HIRING_MANAGER_DEFAULT
 
 
-def hiring_manager_search(vanity_urls: list[str]) -> list[str]:
+def hiring_manager_search(vanity_urls: list[str | None]) -> list[str]:
     """hiring_manager_linkedin_search uses requests-html to get the title tag of the LinkedIn page,
     which should contain the hiring manager's name.
 
@@ -182,6 +185,8 @@ def hiring_manager_search(vanity_urls: list[str]) -> list[str]:
     submit_button.click()
     driver.implicitly_wait(5.0)
     for url in vanity_urls:
+        if url is None:
+            hiring_managers.append(HIRING_MANAGER_DEFAULT)
         time.sleep(5.0)
         driver.get(url)
         driver.implicitly_wait(5.0)
@@ -193,7 +198,7 @@ def hiring_manager_search(vanity_urls: list[str]) -> list[str]:
     return hiring_managers
 
 
-def create_cookies(driver: webdriver.Firefox):
+def create_cookies(driver: webdriver.Firefox) -> None:
     driver.add_cookie(
         {
             "name": "JSESSIONID",
@@ -204,25 +209,37 @@ def create_cookies(driver: webdriver.Firefox):
             "Secure": "True",
         }
     )
-    driver.add_cookie({"name": "lang", "value": "v=2&lang=en-us"})
     driver.add_cookie(
-        {"name": "bcookie", "value": "v=2&333261d3-872a-4eac-85ff-b4a1ddcc117e"}
+        {
+            "name": "lang",
+            "value": "v=2&lang=en-us",
+            "sameSite": "None",
+        }
+    )
+    driver.add_cookie(
+        {
+            "name": "bcookie",
+            "value": "v=2&333261d3-872a-4eac-85ff-b4a1ddcc117e",
+            "sameSite": "None",
+        }
     )
     driver.add_cookie(
         {
             "name": "bscookie",
             "value": "v=1&20240130002126e5c50611-57f7-4a2b-838e-8bfaa2e56a86AQEj2X4zJVHdNdcCxn_sLZ8wFEfW5_l9",
+            "sameSite": "None",
         }
     )
     driver.add_cookie(
         {
             "name": "lidc",
             "value": "b=TGST09:s=T:r=T:a=T:p=T:g=2682:u=1:x=1:i=1706574086:t=1706660486:v=2:sig=AQE55Mbx_f1LVuDB8siC9_H-lewpC9_p",
+            "sameSite": "None",
         }
     )
 
 
-def find_vanity_urls(search_queries) -> list[str]:
+def find_vanity_urls(search_queries) -> list[str | None]:
     """
     Search for LinkedIn profiles based on provided search queries and return vanity URLs.
 
@@ -247,10 +264,9 @@ def find_vanity_urls(search_queries) -> list[str]:
     """
     vanity_urls = []
     with requests.Session() as client:
-        client.headers = CONFIG.google_web_headers
-        user_agent = client.headers["user-agent"]
         for query in search_queries:
             try:
+                time.sleep(3.0)
                 result = lucky(
                     query,
                     num=1,
@@ -258,20 +274,20 @@ def find_vanity_urls(search_queries) -> list[str]:
                     country="US",
                     pause=3.0,
                     extra_params=client.headers,
-                    user_agent=user_agent,
                     verify_ssl=False,
                 )
+
             except (
                 HTTPError,
-                StopIteration,
-                AttributeError,
-                TypeError,
-                InvalidURL,
+                requests.RequestException,
+                KeyError,
+                IndexError,
             ) as error:
                 logger.error(error)
-                result = HIRING_MANAGER_DEFAULT
-            logger.info(result)
-            vanity_urls.append(result)
+                result = None
+
+        vanity_urls.append(result)
+
     return vanity_urls
 
 
