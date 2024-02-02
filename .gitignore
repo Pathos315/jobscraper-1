@@ -18,3 +18,4 @@ Pipfile
 jobscraper_printedlogs/jobscraper_printedlogs.log
 .DS_Store
 **.env
+**letter_format.json

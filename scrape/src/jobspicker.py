@@ -320,7 +320,7 @@ def compile_jobs(jobs: pd.DataFrame) -> list[JobListing]:
     job_fields = [field.name for field in fields(JobListing)]
     for _, row in jobs.iterrows():
         # Clean up column names
-        cleaned_row = {col.strip(): value for col, value in row.items()}
+        cleaned_row = {str(col).strip(): value for col, value in row.items()}
 
         # Create a dictionary of keyword arguments for JobListing
         job_kwargs: dict[str, Any] = {

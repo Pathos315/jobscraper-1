@@ -1,6 +1,5 @@
 r"Generates a cover letter"
 from dataclasses import dataclass
-import json
 from os import rename as move_file
 import os
 from pathlib import Path
@@ -18,7 +17,6 @@ from src.configs import (
     DATE,
     FONT_NAMES,
     FONT_STYLE,
-    UTF,
     CONFIG,
     JobScrapeConfig,
 )
