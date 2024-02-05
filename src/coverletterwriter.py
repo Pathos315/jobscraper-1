@@ -117,35 +117,47 @@ class CoverLetterContents:
     def __call__(self) -> str | None:
         """The collection of strings and variables that make up the copy of the cover letter."""
 
-        self.address: str = f"{persona.name}<br />\
+        self.address: str = (
+            f"{persona.name}<br />\
             {DATE}<br /><br />\
             Dear {self.listing.hiring_manager},"
+        )
 
-        self.introduction: str = f"I'm applying to join the {self.listing.company} team, \
+        self.introduction: str = (
+            f"I'm applying to join the {self.listing.company} team, \
                             for the {self.listing.title} opening <a href={self.listing.job_url} {self.link_color}> as listed on {str(self.listing.site).strip().capitalize()}</a>. \
                             I believe this role reports to you."
+        )
 
-        self.body: str = f"Well-rounded, enthusiastic, and able to see the big picture; I can work through any issue {self.listing.company} faces. \
+        self.body: str = (
+            f"Well-rounded, enthusiastic, and able to see the big picture; I can work through any issue {self.listing.company} faces. \
                             I have 4+ years of experience in both graphic and user experience design. \
                             I know Python, HTML/CSS, JavaScript, and I can design in Figma, Photoshop, Illustrator, AfterEffects, and InDesign. \
                             Beyond that, I'm the co-founder of the Prosocial Design Network, a 501(c)3 that looks to redesign the web to \
                             bring out the best in human nature online."
+        )
 
-        self.invite: str = f"At a time that works with your schedule, would you be free for a 30 minute \
+        self.invite: str = (
+            f"At a time that works with your schedule, would you be free for a 30 minute \
                             meeting via Zoom or phone? For your convenience, I'm including a \
                             <a href={persona.calendly} {self.link_color}>link</a> to my calendar. \
                             Feel free to select a time that works best for you."
+        )
 
-        self.outro: str = f"Thanks for your consideration. I look forward to helping \
+        self.outro: str = (
+            f"Thanks for your consideration. I look forward to helping \
                             {str(self.listing.company).strip()}'s continued success.\
                             Feel free to contact me at <a href='mailto:{persona.email}' {self.link_color}>{persona.email}</a>, or by phone at {persona.phone}.\
                             {self.portfolio}<br />"
+        )
 
         self.close: str = "Warm regards,<br />"
 
-        self.whole_letter: str = f"{self.address} {self.introduction} \
+        self.whole_letter: str = (
+            f"{self.address} {self.introduction} \
                             {self.body} {self.invite}\
                             {self.outro} {self.close} {persona.name}"
+        )
 
 
 @dataclass
@@ -173,9 +185,9 @@ class CoverLetterPrinter:
         """This creates the cover letter as a .txt file."""
         stripped_letter = strip_tags(self.cover_letter.whole_letter)
         return (
-            stripped_letter.replace("                            ", "\n")
-            .replace("            ", "\n\n")
-            .replace("      ", "\n")
+            stripped_letter.replace(" " * 28, "\n")
+            .replace(" " * 12, "\n\n")
+            .replace(" " * 4, "\n")
         )
 
     def __call__(self):

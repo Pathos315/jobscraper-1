@@ -1,5 +1,4 @@
 from __future__ import annotations
-from http.client import InvalidURL
 import os
 from pathlib import Path
 import time

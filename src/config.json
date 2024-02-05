@@ -1,14 +1,14 @@
 {
-    "export_directory": "scrape/exports",
-    "logging_file_path": "scrape/src/logging_config.json",
-    "letter_format_path":  "scrape/src/letter_format.json",
-    "font_regular": "scrape/fonts/IBMPlexSans-Regular.ttf",
-    "font_bold": "scrape/fonts/IBMPlexSans-Bold.ttf",
-    "font_italic": "scrape/fonts/IBMPlexSans-Italic.ttf",
-    "font_bolditalic": "scrape/fonts/IBMPlexSans-BoldItalic.ttf",
+    "export_directory": "exports",
+    "logging_file_path": "src/logging_config.json",
+    "letter_format_path":  "src/letter_format.json",
+    "font_regular": "fonts/IBMPlexSans-Regular.ttf",
+    "font_bold": "fonts/IBMPlexSans-Bold.ttf",
+    "font_italic": "fonts/IBMPlexSans-Italic.ttf",
+    "font_bolditalic": "fonts/IBMPlexSans-BoldItalic.ttf",
     "google_search_query": "site:linkedin.com/in/ \"{}\" \"Recruiter\" @gmail.com New York -posts",
-    "persona_path": "scrape/src/persona.env",
-    "linkedin_credentials_path": "scrape/src/credentials.env",
+    "persona_path": "src/persona.env",
+    "linkedin_credentials_path": "src/credentials.env",
     "job_boards": [
         "indeed"
     ],

@@ -23,6 +23,11 @@ selenium = "^4.17.2"
 python-dotenv = "^1.0.1"
 
 
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.2.1"
+mypy = "^1.8.0"
+pytest = "^8.0.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
