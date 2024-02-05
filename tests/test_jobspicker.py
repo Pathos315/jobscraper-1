@@ -4,7 +4,7 @@
 import numpy as np
 import pandas as pd
 
-from scrape.src.jobspicker import JobListing, compile_jobs
+from src.jobspicker import JobListing, compile_jobs
 
 
 def test_compile_jobs_empty_df():
