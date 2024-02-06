@@ -105,7 +105,7 @@ def pick_jobs() -> pd.DataFrame:
         jobs: pd.DataFrame = scrape_jobs(
             results_wanted=results_wanted,
             site_name=CONFIG.job_boards,
-            search_term=CONFIG.desired_role,
+            search_term="User Experience Designer",
             location="New York, NY",  # only needed for indeed / glassdoor
         )
     return jobs
