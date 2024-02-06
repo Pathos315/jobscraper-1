@@ -30,7 +30,6 @@ class JobScrapeConfig:
     font_italic: str
     font_bolditalic: str
     google_search_query: str
-    desired_role: str
     number_results_wanted: int
     persona_path: str
     linkedin_credentials_path: str
@@ -55,5 +54,5 @@ def read_config(
         return JobScrapeConfig(**data)
 
 
-CONFIG_STR = "scrape/src/config.json"
+CONFIG_STR = "src/config.json"
 CONFIG = read_config(Path(CONFIG_STR).resolve())
