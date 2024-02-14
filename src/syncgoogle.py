@@ -8,6 +8,7 @@ from urllib.parse import quote_plus, urlparse, parse_qs
 
 
 # URL templates to make Google searches.
+
 url_home = "https://www.google.%(tld)s/"
 url_search = (
     "https://www.google.%(tld)s/search?hl=%(lang)s&q=%(query)s&"
@@ -51,18 +52,30 @@ def get_tbs(
     return "cdr:1,cd_min:%(from_date)s,cd_max:%(to_date)s" % vars()
 
 
-# Request the given URL and return the response page, using the cookie jar.
 def get_page(url: str) -> bytes:
-    """ """
+    """
+    Requests the given URL and return the response page.
+
+    :param str url: The requested url.
+
+    :rtype: bytes
+    :return: The response content.
+    """
     with httpx.Client() as client:
         response = client.get(url)
         html = response.read()
     return html
 
 
-# Filter links found in the Google result pages HTML code.
-# Returns None if the link doesn't yield a valid result.
-def filter_result(link: str):
+def filter_result(link: str) -> str | None:
+    """
+    Filter links found in the Google result pages HTML code.
+
+    :param str link: The unparsed link.
+
+    :rtype: str or None
+    :return: The parsed link. Returns None if the link doesn't yield a valid result.
+    """
     try:
 
         # Decode hidden URLs.
@@ -82,7 +95,6 @@ def filter_result(link: str):
         pass
 
 
-# Returns a generator that yields URLs.
 def search(
     query,
     tld="com",
@@ -128,7 +140,7 @@ def search(
 
     :rtype: generator of str
     :return: Generator (iterator) that yields found URLs.
-        If the stop parameter is None the iterator will loop forever.
+        If the stop parameter is None, then the iterator will loop forever.
     """
 
     # Count the number of links yielded.
@@ -146,16 +158,16 @@ def search(
     overlapping_param_check(extra_params)
 
     # Prepare the URL of the first request.
-    if start:
-        if num == 10:
-            url = url_next_page % vars()
-        else:
-            url = url_next_page_num % vars()
-    else:
-        if num == 10:
-            url = url_search % vars()
-        else:
-            url = url_search_num % vars()
+    url_template: str = (
+        proceed_to_next_page_check(num, url_next_page, url_next_page_num)
+        if start
+        else proceed_to_next_page_check(
+            num,
+            url_search,
+            url_search_num,
+        )
+    )
+    url = url_template % vars()
 
     # Loop until we reach the maximum result, if any (otherwise, loop forever).
     while not stop or count < stop:
@@ -190,14 +202,44 @@ def search(
 
         # Prepare the URL for the next request.
         start += num
-        if num == 10:
-            url = url_next_page % vars()
-        else:
-            url = url_next_page_num % vars()
+        url_template = proceed_to_next_page_check(
+            num,
+            url_next_page,
+            url_next_page_num,
+        )
+        url = url_template % vars()
 
 
-def fetch_anchored_urls(html) -> list[str]:
-    """Parse the response and get every anchored URL."""
+def proceed_to_next_page_check(
+    num: int,
+    template_if: str,
+    template_else: str,
+    __pagination_count: int = 10,
+) -> str:
+    """
+    Check if proceeding to next page, and update URL accordingly.
+
+    :param int num: The number of the query.
+    :param str template_if: The template of the url if the condition of int is True.
+    :param str template_else: The template of the url if the condition of int is False.
+    :param int __pagination_count: The condition against which `num` is evaluated.
+        Represents the maximum results per a Google page. Defaults to 10.
+
+    :rtype: str
+    :return: A str with the formatted url.
+    """
+    return template_if if num == __pagination_count else template_else
+
+
+def fetch_anchored_urls(html: bytes) -> list[str]:
+    """
+    Parse the response and get the name from every search result on a Google page.
+
+    :param bytes html: The content from a Google search page.
+
+    :rtype: list[str]
+    :return: A list of names based on the usual metadata format for LinkedIn profiles.
+    """
     names = []
     dom = HTMLParser(html)
     for tag in dom.tags("h3"):
@@ -219,13 +261,11 @@ def overlapping_param_check(extra_params: dict[str, str]) -> None:
             )
 
 
-# Shortcut to single-item search.
-# Evaluates the iterator to return the single URL as a string.
-def lucky(*args, **kwargs):
+def lucky(*args, **kwargs) -> str:
     """
     Shortcut to single-item search.
 
-    Same arguments as the main search function, but the return value changes.
+    Evaluates the iterator to return the single URL as a string.
 
     :rtype: str
     :return: URL found by Google.
