@@ -83,9 +83,9 @@ def pick_jobs() -> pd.DataFrame:
     it creates a new CSV file by scraping job listings using the 'scrape_jobs' function.
     """
     results_wanted = CONFIG.number_results_wanted
-    if results_wanted > 9:
-        logger.warning("Capping results count at 9 to prevent 429 Error Codes.")
-        results_wanted = 9
+    if results_wanted > 15:
+        logger.warning("Capping results count at 15 to prevent 429 Error Codes.")
+        results_wanted = 15
     try:
         logger.info("Picking jobs from csv...")
         jobs = pd.read_csv(OUTPUT)
