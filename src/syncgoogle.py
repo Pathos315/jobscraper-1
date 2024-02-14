@@ -1,9 +1,8 @@
 import time
-from typing import Generator
-from selectolax.parser import HTMLParser, Node
+from typing import Any, Generator
+from selectolax.parser import HTMLParser
 import datetime
 import httpx
-import googlesearch
 
 from urllib.parse import quote_plus, urlparse, parse_qs
 
@@ -54,18 +53,7 @@ def get_tbs(
 
 # Request the given URL and return the response page, using the cookie jar.
 def get_page(url: str) -> bytes:
-    """
-    Request the given URL and return the response page, using the cookie jar.
-
-    :param str url: URL to retrieve.
-    :param str user_agent: User agent for the HTTP requests.
-        Use None for the default.
-    :param bool verify_ssl: Verify the SSL certificate to prevent
-        traffic interception attacks. Defaults to True.
-
-    :rtype: str
-    :return: Web page retrieved for the given URL.
-    """
+    """ """
     with httpx.Client() as client:
         response = client.get(url)
         html = response.read()
@@ -152,7 +140,7 @@ def search(
     # If no extra_params is given, create an empty dictionary.
     # We should avoid using an empty dictionary as a default value
     # in a function parameter in Python.
-    extra_params = {} if not extra_params else extra_params
+    extra_params: dict[str, Any] = {} if not extra_params else extra_params
 
     # Check extra_params for overlapping.
     overlapping_param_check(extra_params)
@@ -180,23 +168,23 @@ def search(
             url = url + ("&%s=%s" % (k, v))
 
         # Sleep between requests.
-        # Keeps Google from banning you for making too many requests.
+        # Keeps Google from banning you due to making too many requests.
         time.sleep(pause)
 
         # Request the Google Search results page.
         html = get_page(url)
-        filtered_links = set(fetch_anchored_urls(html))
-        for link in filtered_links:
-            yield link
-            # Yield the result.
-            # yield link
 
+        # Turning it into a set removes duplicates
+        filtered_links = set(fetch_anchored_urls(html))
+
+        for link in filtered_links:
+
+            # Yield the result.
+            yield link
             # Increase the results counter.
             count += 1
 
-            # If we reached the limit, stop.
         # End if there are no more results.
-        # XXX TODO review this logic, not sure if this is still true!
         if last_count == count:
             break
 
@@ -208,7 +196,20 @@ def search(
             url = url_next_page_num % vars()
 
 
-def overlapping_param_check(extra_params: dict[str, str]):
+def fetch_anchored_urls(html) -> list[str]:
+    """Parse the response and get every anchored URL."""
+    names = []
+    dom = HTMLParser(html)
+    for tag in dom.tags("h3"):
+        raw_name = tag.text()  # Get text from Google homepage
+        name = raw_name.split(" - ")[
+            0
+        ]  # LinkedIn domains follow a set pattern of `<name> - <position> - <company>`; this gets the name.
+        names.append(name)  # Appends name to list
+    return names
+
+
+def overlapping_param_check(extra_params: dict[str, str]) -> None:
     for builtin_param in url_parameters:
         if builtin_param in extra_params.keys():
             raise ValueError(
@@ -216,21 +217,6 @@ def overlapping_param_check(extra_params: dict[str, str]):
                 the built-in GET parameter',
                 builtin_param,
             )
-
-
-def format_url(extra_params: dict[str, str], url: str) -> None:
-    url += "".join(f"&{quote_plus(k)}={quote_plus(v)}" for k, v in extra_params.items())
-
-
-def fetch_anchored_urls(html) -> list[str]:
-    """Parse the response and get every anchored URL."""
-    names = []
-    dom = HTMLParser(html)
-    for tag in dom.tags("h3"):
-        raw_name = tag.text()
-        name = raw_name.split(" - ")[0]
-        names.append(name)
-    return names
 
 
 # Shortcut to single-item search.
