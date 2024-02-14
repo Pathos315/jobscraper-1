@@ -34,7 +34,6 @@ class JobScrapeConfig:
     persona_path: str
     linkedin_credentials_path: str
     job_boards: list[str] = field(default_factory=list)
-    google_web_headers: dict = field(default_factory=dict)
 
 
 def read_config(

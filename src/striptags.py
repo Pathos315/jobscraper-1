@@ -1,5 +1,6 @@
 from html.parser import HTMLParser
 from io import StringIO
+from typing import Any
 
 
 class MLStripper(HTMLParser):
@@ -16,10 +17,10 @@ class MLStripper(HTMLParser):
         self.convert_charrefs = True
         self.text = StringIO()
 
-    def handle_data(self, d):
+    def handle_data(self, d: Any) -> None:
         self.text.write(d)
 
-    def get_data(self):
+    def get_data(self) -> str:
         return self.text.getvalue()
 
 

@@ -12,9 +12,5 @@
     "job_boards": [
         "indeed"
     ],
-    "number_results_wanted": 19,
-    "google_web_headers": {
-        "cookie": "1P_JAR=2024-01-30-00; AEC=Ae3NU9MjvWM0EYy0fgB6VCPJb0bbOv80M8i7EBsrfkDY_W12crApTSXmLw; NID=511%3Dq9G-w00bsGDh7CpTRRiO8ZWC1csSYPtyh0c1b4sbCqmirx4S4wQS-IiJs1pwSP9mLpcCyY7xy1xhrG9xfKjF2adASdvxOV042rK1XQPOkr-c3QmutjYD85pTNYZxD16qONiYJsvf-Apj1w_Ah2ldVcp6v_HSpAxxS7DdrGSiQfo",
-        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0"
-    }
+    "number_results_wanted": 19
 }
