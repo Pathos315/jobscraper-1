@@ -53,7 +53,17 @@ class PersonaConfig:
     calendly: str | None
 
 
-persona = PersonaConfig(os.environ.get(key) for key in ALL_ENVIRON_KEYS)
+persona = PersonaConfig(
+    name=os.environ.get(ALL_ENVIRON_KEYS[0]),
+    email=os.environ.get(ALL_ENVIRON_KEYS[1]),
+    portfolio=os.environ.get(ALL_ENVIRON_KEYS[2]),
+    location=os.environ.get(ALL_ENVIRON_KEYS[3]),
+    desired_role=os.environ.get(ALL_ENVIRON_KEYS[4]),
+    phone=os.environ.get(ALL_ENVIRON_KEYS[5]),
+    signature_path=os.environ.get(ALL_ENVIRON_KEYS[6]),
+    calendly=os.environ.get(ALL_ENVIRON_KEYS[7]),
+)
+
 
 ALL_ATTR_NAMES = [
     "address",
@@ -120,13 +130,13 @@ class CoverLetterContents:
         self.address: str = (
             f"{persona.name}<br />\
             {DATE}<br /><br />\
-            Dear {self.listing.hiring_manager},"
+            Dear {self.listing.recruiter},"
         )
 
         self.introduction: str = (
             f"I'm applying to join the {self.listing.company} team, \
                             for the {self.listing.title} opening <a href={self.listing.job_url} {self.link_color}> as listed on {str(self.listing.site).strip().capitalize()}</a>. \
-                            I believe this role reports to you."
+                            I suspect that you're the appropriate recruitment contact."
         )
 
         self.body: str = (
@@ -193,7 +203,7 @@ class CoverLetterPrinter:
     def __call__(self):
         self.register_fonts()
         self.add_styles()
-        output_directory = Path(f"scrape/exports/{DATE}_exports")
+        output_directory = Path(f"exports/{DATE}_exports")
         output_directory.mkdir(exist_ok=True)
         letter_txt_path = (
             output_directory / f"{DATE}_{self.cover_letter.subject}_CoverLetter.txt"
