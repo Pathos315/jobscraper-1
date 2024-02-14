@@ -54,14 +54,7 @@ class PersonaConfig:
 
 
 persona = PersonaConfig(
-    name=os.environ.get(ALL_ENVIRON_KEYS[0]),
-    email=os.environ.get(ALL_ENVIRON_KEYS[1]),
-    portfolio=os.environ.get(ALL_ENVIRON_KEYS[2]),
-    location=os.environ.get(ALL_ENVIRON_KEYS[3]),
-    desired_role=os.environ.get(ALL_ENVIRON_KEYS[4]),
-    phone=os.environ.get(ALL_ENVIRON_KEYS[5]),
-    signature_path=os.environ.get(ALL_ENVIRON_KEYS[6]),
-    calendly=os.environ.get(ALL_ENVIRON_KEYS[7]),
+    **{key.lower(): os.environ.get(key) for key in ALL_ENVIRON_KEYS}
 )
 
 
