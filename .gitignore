@@ -19,3 +19,4 @@ jobscraper_printedlogs/jobscraper_printedlogs.log
 .DS_Store
 src/persona.env
 src/credentials.env
+src/asyncgoogle.py
