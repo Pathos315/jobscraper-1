@@ -20,3 +20,4 @@ jobscraper_printedlogs/jobscraper_printedlogs.log
 src/persona.env
 src/credentials.env
 src/asyncgoogle.py
+**.pyc
