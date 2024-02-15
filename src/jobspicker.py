@@ -16,7 +16,6 @@ load_dotenv(Path(CONFIG.linkedin_credentials_path).resolve())
 HOME_URL = "https://www.linkedin.com/"
 KEY = os.environ.get("SESSION_KEY")
 PASSWORD = os.environ.get("SESSION_PASSWORD")
-OUTPUT = Path.cwd() / f"{DATE}_joblistings.csv"
 
 
 @dataclass
@@ -43,7 +42,7 @@ class JobListing:
     recruiter: str
 
 
-def find_jobs() -> list[JobListing]:
+def find_jobs(search_term: str = "Python") -> list[JobListing]:
     """
     Find job listings, search for recruiters, and compile job listings with hiring manager information.
 
@@ -56,23 +55,26 @@ def find_jobs() -> list[JobListing]:
     'find_vanity_urls' functions, adds hiring manager information to the job listings DataFrame,
     and then compiles the JobListing instances.
     """
-    jobs = pick_jobs()
+    output_path: Path = Path.cwd() / f"{search_term}_{DATE}_joblistings.csv"
+    jobs = pick_jobs(search_term, output_path)
     # if "recruiter" in jobs:
     # logger.info("Writing letters...")
     # return compile_jobs(jobs)
     logger.info("No recruiters found. Searching for recruiters...")
     companies: list[str] = jobs["company"].to_list()
-    search_queries: list[str] = get_recruiter_queries(companies)
+    search_queries: list[str] = get_recruiter_queries(companies, search_term)
+    jobs: pd.DataFrame = jobs.assign(queries_in_use=search_queries)
     recruiters_names = find_recruiters(search_queries)
     try:
         jobs: pd.DataFrame = jobs.assign(recruiter=recruiters_names)
     except ValueError as warning:
         logger.warning(f"{warning} | Recruiters will be excluded from this .csv file.")
-    jobs.to_csv(OUTPUT, index=False)
+
+    jobs.to_csv(output_path, index=False)
     return compile_jobs(jobs)
 
 
-def pick_jobs() -> pd.DataFrame:
+def pick_jobs(search_term: str, output_path: Path) -> pd.DataFrame:
     """
     Pick job listings from a CSV file or scrape new job listings if the CSV file is not found.
 
@@ -83,24 +85,24 @@ def pick_jobs() -> pd.DataFrame:
     it creates a new CSV file by scraping job listings using the 'scrape_jobs' function.
     """
     results_wanted = CONFIG.number_results_wanted
-    if results_wanted > 15:
-        logger.warning("Capping results count at 15 to prevent 429 Error Codes.")
-        results_wanted = 15
+    if results_wanted > 6:
+        logger.warning("Capping results count at 6 to prevent 429 Error Codes.")
+        results_wanted = 6
     try:
         logger.info("Picking jobs from csv...")
-        jobs = pd.read_csv(OUTPUT)
+        jobs = pd.read_csv(output_path)
     except FileNotFoundError:
         logger.info("No csv found, creating csv...")
         jobs: pd.DataFrame = scrape_jobs(
             results_wanted=results_wanted,
             site_name=CONFIG.job_boards,
-            search_term="User Experience Designer",
+            search_term=search_term,
             location="New York, NY",  # only needed for indeed / glassdoor
         )
     return jobs
 
 
-def get_recruiter_queries(companies: list[str]) -> list[str]:
+def get_recruiter_queries(companies: list[str], search_term: str) -> list[str]:
     """
     Generate LinkedIn search queries for finding recruiters based on company names.
 
@@ -124,7 +126,10 @@ def get_recruiter_queries(companies: list[str]) -> list[str]:
     """
     logger.info(companies)
     return [
-        CONFIG.google_search_query.format(company.strip().replace(" ", "+"))
+        CONFIG.google_search_query.format(
+            company.strip().replace(" ", "+"),
+            search_term.strip(),
+        )
         for company in companies
     ]
 
