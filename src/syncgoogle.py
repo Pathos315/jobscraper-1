@@ -6,7 +6,6 @@ import httpx
 
 from urllib.parse import quote_plus, urlparse, parse_qs
 
-
 # URL templates to make Google searches.
 
 url_home = "https://www.google.%(tld)s/"
@@ -33,11 +32,10 @@ url_next_page_num = (
 url_parameters = ("hl", "q", "num", "btnG", "start", "tbs", "safe", "cr")
 
 
-# Helper function to format the tbs parameter.
 def get_tbs(
     from_date: datetime.date,
     to_date: datetime.date,
-):
+) -> str:
     """
     Helper function to format the tbs parameter.
 
@@ -121,8 +119,7 @@ def search(
     :param str safe: Safe search.
     :param int num: Number of results per page.
     :param int start: First result to retrieve.
-    :param int stop: Last result to retrieve.
-        Use None to keep searching forever.
+    :param int stop: Last result to retrieve. Use None to keep searching forever.
     :param float pause: Lapse to wait between HTTP requests.
         A lapse too long will make the search slow, but a lapse too short may
         cause Google to block your IP. Your mileage may vary!
@@ -138,12 +135,15 @@ def search(
     :param bool verify_ssl: Verify the SSL certificate to prevent
         traffic interception attacks. Defaults to True.
 
+    :variable count int: The number of links yielded.
+
     :rtype: generator of str
     :return: Generator (iterator) that yields found URLs.
         If the stop parameter is None, then the iterator will loop forever.
     """
+    global search_params
+    search_params = vars()
 
-    # Count the number of links yielded.
     count: int = 0
 
     # Prepare the search string.
@@ -152,13 +152,11 @@ def search(
     # If no extra_params is given, create an empty dictionary.
     # We should avoid using an empty dictionary as a default value
     # in a function parameter in Python.
-    extra_params: dict[str, Any] = {} if not extra_params else extra_params
+    extra_params: dict[str, Any] = dict() if not extra_params else extra_params
 
-    # Check extra_params for overlapping.
     overlapping_param_check(extra_params)
 
-    # Prepare the URL of the first request.
-    url_template: str = (
+    url: str = (
         proceed_to_next_page_check(num, url_next_page, url_next_page_num)
         if start
         else proceed_to_next_page_check(
@@ -167,7 +165,6 @@ def search(
             url_search_num,
         )
     )
-    url = url_template % vars()
 
     # Loop until we reach the maximum result, if any (otherwise, loop forever).
     while not stop or count < stop:
@@ -187,13 +184,10 @@ def search(
         html = get_page(url)
 
         # Turning it into a set removes duplicates
-        filtered_links = set(fetch_anchored_urls(html))
+        filtered_names = set(fetch_anchored_urls(html))
 
-        for link in filtered_links:
-
-            # Yield the result.
-            yield link
-            # Increase the results counter.
+        for names in filtered_names:
+            yield names
             count += 1
 
         # End if there are no more results.
@@ -202,12 +196,11 @@ def search(
 
         # Prepare the URL for the next request.
         start += num
-        url_template = proceed_to_next_page_check(
+        url = proceed_to_next_page_check(
             num,
             url_next_page,
             url_next_page_num,
         )
-        url = url_template % vars()
 
 
 def proceed_to_next_page_check(
@@ -228,7 +221,8 @@ def proceed_to_next_page_check(
     :rtype: str
     :return: A str with the formatted url.
     """
-    return template_if if num == __pagination_count else template_else
+    url_template = template_if if num == __pagination_count else template_else
+    return url_template % search_params
 
 
 def fetch_anchored_urls(html: bytes) -> list[str]:
@@ -252,6 +246,7 @@ def fetch_anchored_urls(html: bytes) -> list[str]:
 
 
 def overlapping_param_check(extra_params: dict[str, str]) -> None:
+    """Checks `extra_params` argument for overlapping entries."""
     for builtin_param in url_parameters:
         if builtin_param in extra_params.keys():
             raise ValueError(
