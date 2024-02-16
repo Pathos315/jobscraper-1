@@ -21,3 +21,5 @@ src/persona.env
 src/credentials.env
 src/asyncgoogle.py
 **.pyc
+1x/signature.png
+.DS_Store
