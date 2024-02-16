@@ -1,7 +1,7 @@
 r"Generates a cover letter"
 from dataclasses import dataclass
-from os import rename as move_file
-import os
+import json
+from os import rename as move_file, environ
 from pathlib import Path
 from typing import Any
 from dotenv import load_dotenv
@@ -28,6 +28,10 @@ reportlab.rl_config.warnOnMissingFontGlyphs = 0  # type: ignore
 
 load_dotenv(Path(CONFIG.persona_path).resolve())
 
+CWD = Path.cwd()
+LETTER_FORMAT_PATH = Path(CONFIG.letter_format_path).resolve()
+
+EOL = "<br />"
 
 ALL_ENVIRON_KEYS = [
     "NAME",
@@ -53,32 +57,17 @@ class PersonaConfig:
     calendly: str | None
 
 
-persona = PersonaConfig(
-    **{key.lower(): os.environ.get(key) for key in ALL_ENVIRON_KEYS}
-)
+persona = PersonaConfig(**{key.lower(): environ.get(key) for key in ALL_ENVIRON_KEYS})
 
 
-ALL_ATTR_NAMES = [
-    "address",
+attr = [
+    "header",
     "introduction",
     "body",
     "invite",
     "outro",
     "close",
 ]
-
-
-@dataclass
-class LetterFormat:
-    address: str
-    date: str
-    salutation: str
-    introduction: str
-    skills: str
-    activities: str
-    invite: str
-    outro: str
-    close: str
 
 
 @dataclass
@@ -91,7 +80,7 @@ class CoverLetterContents:
     @property
     def signature(self):
         return Image(
-            filename=Path.cwd() / persona.signature_path,
+            filename=CWD / persona.signature_path,
             width=80,
             height=40,
             hAlign="LEFT",
@@ -117,49 +106,26 @@ class CoverLetterContents:
             else "My portfolio is available upon request."
         )
 
-    def __call__(self) -> str | None:
+    def __call__(self) -> None:
         """The collection of strings and variables that make up the copy of the cover letter."""
-
-        self.address: str = (
-            f"{persona.name}<br />\
-            {DATE}<br /><br />\
-            Dear {self.listing.recruiter},"
+        with open(LETTER_FORMAT_PATH) as letter_format:
+            letter_template: dict[str, str] = json.load(letter_format)
+        letter_as_string: str = EOL.join(
+            f"{value}{EOL}" for value in letter_template.values()
         )
-
-        self.introduction: str = (
-            f"I'm applying to join the {self.listing.company} team, \
-                            for the {self.listing.title} opening <a href={self.listing.job_url} {self.link_color}> as listed on {str(self.listing.site).strip().capitalize()}</a>. \
-                            I suspect that you're the appropriate recruitment contact."
-        )
-
-        self.body: str = (
-            f"Well-rounded, enthusiastic, and able to see the big picture; I can work through any issue {self.listing.company} faces. \
-                            I have 4+ years of experience in both graphic and user experience design. \
-                            I know Python, HTML/CSS, JavaScript, and I can design in Figma, Photoshop, Illustrator, AfterEffects, and InDesign. \
-                            Beyond that, I'm the co-founder of the Prosocial Design Network, a 501(c)3 that looks to redesign the web to \
-                            bring out the best in human nature online."
-        )
-
-        self.invite: str = (
-            f"At a time that works with your schedule, would you be free for a 30 minute \
-                            meeting via Zoom or phone? For your convenience, I'm including a \
-                            <a href={persona.calendly} {self.link_color}>link</a> to my calendar. \
-                            Feel free to select a time that works best for you."
-        )
-
-        self.outro: str = (
-            f"Thanks for your consideration. I look forward to helping \
-                            {str(self.listing.company).strip()}'s continued success.\
-                            Feel free to contact me at <a href='mailto:{persona.email}' {self.link_color}>{persona.email}</a>, or by phone at {persona.phone}.\
-                            {self.portfolio}<br />"
-        )
-
-        self.close: str = "Warm regards,<br />"
-
-        self.whole_letter: str = (
-            f"{self.address} {self.introduction} \
-                            {self.body} {self.invite}\
-                            {self.outro} {self.close} {persona.name}"
+        self.whole_letter = letter_as_string.format(
+            name=persona.name,
+            date=DATE,
+            recruiter=self.listing.recruiter,
+            company=self.listing.company,
+            job=self.listing.title,
+            job_url=self.listing.job_url,
+            listing_site=self.listing.site,
+            calendly=persona.calendly,
+            link_color=self.link_color,
+            email=persona.email,
+            phone=persona.phone,
+            portfolio=self.portfolio,
         )
 
 
@@ -211,10 +177,10 @@ class CoverLetterPrinter:
 
     def register_fonts(self):
         """This registers the fonts for use in the PDF, querying them from the config.json file."""
-        registerFont(TTFont(FONT_NAMES[0], Path.cwd() / self.config.font_regular))
-        registerFont(TTFont(FONT_NAMES[1], Path.cwd() / self.config.font_bold))
-        registerFont(TTFont(FONT_NAMES[2], Path.cwd() / self.config.font_italic))
-        registerFont(TTFont(FONT_NAMES[3], Path.cwd() / self.config.font_bolditalic))
+        registerFont(TTFont(FONT_NAMES[0], CWD / self.config.font_regular))
+        registerFont(TTFont(FONT_NAMES[1], CWD / self.config.font_bold))
+        registerFont(TTFont(FONT_NAMES[2], CWD / self.config.font_italic))
+        registerFont(TTFont(FONT_NAMES[3], CWD / self.config.font_bolditalic))
         registerFontFamily(
             FONT_NAMES[0],
             normal=FONT_NAMES[0],
@@ -248,25 +214,22 @@ class CoverLetterPrinter:
             )
         )
 
-    def format_letter(self) -> list[Paragraph | Image | Any]:
+    def format_letter(self) -> list[Paragraph | Image]:
         """format_letter builds the cover letter.
 
         Returns:
             list[Paragraph | Image | Any ]: A formatted letter with signature.
         """
         main_style = self.stylesheet[FONT_STYLE]
-        paragraphs: list[Paragraph | Image] = [
-            getattr(self.cover_letter, attr_name) for attr_name in ALL_ATTR_NAMES
+        return [
+            Paragraph(self.cover_letter.whole_letter, style=main_style),
+            self.cover_letter.signature,
         ]
-        paragraphs = [
-            Paragraph(paragraph, style=main_style) for paragraph in paragraphs
-        ]
-        paragraphs.append(self.cover_letter.signature)
-        paragraphs.append(Paragraph(persona.name, style=main_style))
-        return paragraphs
 
-    def write_cover_letter(self):
-        """This creates the cover letter as .pdf using the ReportLab PDF Library."""
+    def write_cover_letter(self) -> None:
+        """
+        This creates the cover letter as .pdf using the ReportLab PDF Library.
+        """
         self.cover_letter()
         paragraphs = self.format_letter()
         self.formatted_letter.build(paragraphs)

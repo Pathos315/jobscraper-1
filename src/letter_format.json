@@ -1,10 +1,7 @@
 {
-    "address" : "{}<br />",
-    "date": "{}<br /><br />",
-    "salutation": "Dear {},",
-    "introduction": "I'm applying to join the {} team, for the {} opening <a href={} {}> as listed on {}</a>. I believe this role reports to you.",
-    "skills": "Well-rounded, enthusiastic, and able to see the big picture; I can work through any issue {} faces. I have 4+ years of experience in both graphic and user experience design. I know Python, HTML/CSS, JavaScript, and I can design in Figma, Photoshop, Illustrator, AfterEffects, and InDesign.",
-    "invite": "At a time that works with your schedule, would you be free for a 30 minute meeting via Zoom or phone? For your convenience, I'm including a <a href={} {}>link</a> to my calendar. Feel free to select a time that works best for you.",
-    "outro": "Thanks for your consideration. I look forward to helping {}'s continued success. Feel free to contact me at <a href='mailto:{}' {}>{}</a>, or by phone at {}. {}<br />",
-    "close": "Warm regards,<br />"
+    "header": "{name}<br />{date}<br /><br />Dear {recruiter},",
+    "introduction": "I'm applying to join the {company} team, for the {job} opening <a href={job_url} {link_color}> as listed on {listing_site}</a>. I suspect that you're the appropriate recruitment contact.",
+    "skills": "Well-rounded, enthusiastic, and able to see the big picture; I can work through any issue {company} faces. I have 4+ years of experience in both graphic and user experience design. I know Python, HTML/CSS, JavaScript, and I can design in Figma, Photoshop, Illustrator, AfterEffects, and InDesign.",
+    "invite": "At a time that works with your schedule, would you be free for a 30 minute meeting via Zoom or phone? For your convenience, I'm including a <a href={calendly} {link_color}>link</a> to my calendar. Feel free to select a time that works best for you.",
+    "outro": "Thanks for your consideration. I look forward to helping {company}'s continued success. Feel free to contact me at <a href='mailto:{email}' {link_color}>{email}</a>, or by phone at {phone}. {portfolio}<br /><br /> Warm regards,<br /><br />{name}"
 }
