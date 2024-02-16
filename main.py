@@ -14,7 +14,10 @@ def main() -> None:
     start = perf_counter()
 
     logger.info("Initializing Jobscraper Program...")
-    all_jobs = find_jobs()
+    search_term = input(
+        "Enter desired search term, e.g. Python, Graphic Designer, Engineer..."
+    )
+    all_jobs = find_jobs(search_term)
     for job in tqdm(all_jobs):
         letter_contents: CoverLetterContents = CoverLetterContents(job, CONFIG)
         letter_printer: CoverLetterPrinter = CoverLetterPrinter(CONFIG, letter_contents)
