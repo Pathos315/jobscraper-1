@@ -1,5 +1,5 @@
 from __future__ import annotations
-import os
+from os import environ
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -14,8 +14,8 @@ from src.log import logger
 
 load_dotenv(Path(CONFIG.linkedin_credentials_path).resolve())
 HOME_URL = "https://www.linkedin.com/"
-KEY = os.environ.get("SESSION_KEY")
-PASSWORD = os.environ.get("SESSION_PASSWORD")
+KEY = environ.get("SESSION_KEY")
+PASSWORD = environ.get("SESSION_PASSWORD")
 
 
 @dataclass
@@ -42,7 +42,7 @@ class JobListing:
     recruiter: str
 
 
-def find_jobs(search_term: str = "Python") -> list[JobListing]:
+def find_jobs(search_term: str) -> list[JobListing]:
     """
     Find job listings, search for recruiters, and compile job listings with hiring manager information.
 
@@ -58,8 +58,8 @@ def find_jobs(search_term: str = "Python") -> list[JobListing]:
     output_path: Path = Path.cwd() / f"{search_term}_{DATE}_joblistings.csv"
     jobs = pick_jobs(search_term, output_path)
     # if "recruiter" in jobs:
-    # logger.info("Writing letters...")
-    # return compile_jobs(jobs)
+    #    logger.info("Writing letters...")
+    #    return compile_jobs(jobs)
     logger.info("No recruiters found. Searching for recruiters...")
     companies: list[str] = jobs["company"].to_list()
     search_queries: list[str] = get_recruiter_queries(companies, search_term)
@@ -85,9 +85,9 @@ def pick_jobs(search_term: str, output_path: Path) -> pd.DataFrame:
     it creates a new CSV file by scraping job listings using the 'scrape_jobs' function.
     """
     results_wanted = CONFIG.number_results_wanted
-    if results_wanted > 6:
+    if results_wanted > 5:
         logger.warning("Capping results count at 6 to prevent 429 Error Codes.")
-        results_wanted = 6
+        results_wanted = 5
     try:
         logger.info("Picking jobs from csv...")
         jobs = pd.read_csv(output_path)
@@ -134,7 +134,7 @@ def get_recruiter_queries(companies: list[str], search_term: str) -> list[str]:
     ]
 
 
-def find_recruiters(search_queries):
+def find_recruiters(search_queries) -> list[str]:
     """
     Search for LinkedIn profiles based on provided search queries and return names
 
