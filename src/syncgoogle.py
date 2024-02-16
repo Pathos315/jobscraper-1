@@ -5,6 +5,7 @@ import datetime
 import httpx
 
 from urllib.parse import quote_plus, urlparse, parse_qs
+from src.log import logger
 
 # URL templates to make Google searches.
 
@@ -65,7 +66,7 @@ def get_page(url: str) -> bytes:
     return html
 
 
-def filter_result(link: str) -> str | None:
+def parse_google_links(link: str) -> str | None:
     """
     Filter links found in the Google result pages HTML code.
 
@@ -75,22 +76,43 @@ def filter_result(link: str) -> str | None:
     :return: The parsed link. Returns None if the link doesn't yield a valid result.
     """
     try:
+        decoded_link = decode_hidden_url(link)
+        if decoded_link and is_valid_result(decoded_link):
+            return decoded_link
+    except (ValueError, KeyError) as exception:
+        logger.error("An error occurred while parsing the link: %s", exception)
+    return None
 
-        # Decode hidden URLs.
-        if link.startswith("/url?"):
-            o = urlparse(link, "http")
-            link = parse_qs(o.query)["q"][0]
 
-        # Valid results are absolute URLs not pointing to a Google domain,
-        # like images.google.com or googleusercontent.com for example.
-        # TODO this could be improved!
-        o = urlparse(link, "http")
-        if o.netloc and "google" not in o.netloc:
-            return link
+def decode_hidden_url(link: str) -> str | None:
+    """
+    Decode hidden URLs starting with "/url?".
 
-    # On error, return None.
-    except Exception:
-        pass
+    :param str link: The unparsed link.
+
+    :rtype: str or None
+    :return: The decoded URL if it starts with "/url?", otherwise None.
+    """
+    if not link.startswith("/url?"):
+        return None
+    parsed_url = urlparse(link, "http")
+    query_params = parse_qs(parsed_url.query)
+    if not "q" in query_params:
+        return None
+    return query_params["q"][0]
+
+
+def is_valid_result(link: str) -> bool:
+    """
+    Check if the link is a valid result.
+
+    :param str link: The parsed link.
+
+    :rtype: bool
+    :return: True if the link is a valid result, False otherwise.
+    """
+    parsed_url = urlparse(link, "http")
+    return bool(parsed_url.netloc) and bool("google" not in parsed_url.netloc)
 
 
 def search(
@@ -135,8 +157,6 @@ def search(
     :param bool verify_ssl: Verify the SSL certificate to prevent
         traffic interception attacks. Defaults to True.
 
-    :variable count int: The number of links yielded.
-
     :rtype: generator of str
     :return: Generator (iterator) that yields found URLs.
         If the stop parameter is None, then the iterator will loop forever.
@@ -170,11 +190,7 @@ def search(
     while not stop or count < stop:
         last_count = count
 
-        # Append extra GET parameters to the URL.
-        for k, v in extra_params.items():
-            k = quote_plus(k)
-            v = quote_plus(v)
-            url = url + ("&%s=%s" % (k, v))
+        url = append_extra_get_params(extra_params, url)
 
         # Sleep between requests.
         # Keeps Google from banning you due to making too many requests.
@@ -203,6 +219,26 @@ def search(
         )
 
 
+def append_extra_get_params(extra_params: dict[str, Any], url: str) -> str:
+    """
+    Appends extra GET parameters to the URL.
+
+    :param dict extra_params: A dictionary of extra HTTP GET
+        parameters, which must be URL encoded. For example if you don't want
+        Google to filter similar results you can set the extra_params to
+        {'filter': '0'} which will append '&filter=0' to every query.
+    :param str url: A google search query URL.
+
+    :rtype str
+    :return: An amended URL with the extra HTTP GET parameters appended.
+    """
+    for k, v in extra_params.items():
+        k = quote_plus(k)
+        v = quote_plus(v)
+        url = url + ("&%s=%s" % (k, v))
+    return url
+
+
 def proceed_to_next_page_check(
     num: int,
     template_if: str,
@@ -213,11 +249,9 @@ def proceed_to_next_page_check(
     Check if proceeding to next page, and update URL accordingly.
 
     :param int num: The number of the query.
-    :param str template_if: The template of the url if the condition of int is True.
-    :param str template_else: The template of the url if the condition of int is False.
-    :param int __pagination_count: The condition against which `num` is evaluated.
-        Represents the maximum results per a Google page. Defaults to 10.
-
+    :param str template_if: The template of the url if the condition of `num == __pagination_count` is True.
+    :param str template_else: The template of the url if the condition of `num == __pagination_count` is False.
+    :param int __pagination_count: The condition against which `num` is evaluated. Represents the maximum results per a Google page. Defaults to 10.
     :rtype: str
     :return: A str with the formatted url.
     """
