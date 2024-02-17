@@ -53,5 +53,4 @@ def read_config(
         return JobScrapeConfig(**data)
 
 
-CONFIG_STR = "src/config.json"
-CONFIG = read_config(Path(CONFIG_STR).resolve())
+CONFIG = read_config(Path("src/config.json").resolve())
