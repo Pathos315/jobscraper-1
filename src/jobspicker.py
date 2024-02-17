@@ -55,11 +55,13 @@ def find_jobs(search_term: str) -> list[JobListing]:
     'find_vanity_urls' functions, adds hiring manager information to the job listings DataFrame,
     and then compiles the JobListing instances.
     """
-    output_path: Path = Path.cwd() / f"{search_term}_{DATE}_joblistings.csv"
+    output_path: Path = (
+        Path.cwd() / "joblistings" / f"{search_term}_{DATE}_joblistings.csv"
+    )
     jobs = pick_jobs(search_term, output_path)
-    # if "recruiter" in jobs:
-    #    logger.info("Writing letters...")
-    #    return compile_jobs(jobs)
+    if "recruiter" in jobs:
+        logger.info("Writing letters...")
+        return compile_jobs(jobs)
     logger.info("No recruiters found. Searching for recruiters...")
     companies: list[str] = jobs["company"].to_list()
     search_queries: list[str] = get_recruiter_queries(companies, search_term)
@@ -84,10 +86,13 @@ def pick_jobs(search_term: str, output_path: Path) -> pd.DataFrame:
     This function attempts to read job listings from a CSV file. If the file is not found,
     it creates a new CSV file by scraping job listings using the 'scrape_jobs' function.
     """
+    results_cap = 5
     results_wanted = CONFIG.number_results_wanted
-    if results_wanted > 5:
-        logger.warning("Capping results count at 6 to prevent 429 Error Codes.")
-        results_wanted = 5
+    if results_wanted > results_cap:
+        logger.warning(
+            f"Capping results count at {results_cap} to prevent 429 Error Codes."
+        )
+        results_wanted = results_cap
     try:
         logger.info("Picking jobs from csv...")
         jobs = pd.read_csv(output_path)
