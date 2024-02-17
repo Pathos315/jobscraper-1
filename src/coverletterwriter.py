@@ -1,9 +1,8 @@
 r"Generates a cover letter"
 from dataclasses import dataclass
-import json
+from json import load as json_load
 from os import rename as move_file, environ
 from pathlib import Path
-from typing import Any
 from dotenv import load_dotenv
 
 import reportlab.rl_config
@@ -30,9 +29,7 @@ load_dotenv(Path(CONFIG.persona_path).resolve())
 
 CWD = Path.cwd()
 LETTER_FORMAT_PATH = Path(CONFIG.letter_format_path).resolve()
-
 EOL = "<br />"
-
 ALL_ENVIRON_KEYS = [
     "NAME",
     "EMAIL",
@@ -58,16 +55,6 @@ class PersonaConfig:
 
 
 persona = PersonaConfig(**{key.lower(): environ.get(key) for key in ALL_ENVIRON_KEYS})
-
-
-attr = [
-    "header",
-    "introduction",
-    "body",
-    "invite",
-    "outro",
-    "close",
-]
 
 
 @dataclass
@@ -109,7 +96,7 @@ class CoverLetterContents:
     def __call__(self) -> None:
         """The collection of strings and variables that make up the copy of the cover letter."""
         with open(LETTER_FORMAT_PATH) as letter_format:
-            letter_template: dict[str, str] = json.load(letter_format)
+            letter_template: dict[str, str] = json_load(letter_format)
         letter_as_string: str = EOL.join(
             f"{value}{EOL}" for value in letter_template.values()
         )
